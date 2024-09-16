@@ -2,6 +2,8 @@
 
 use crate::treepp::*;
 
+use super::core::{naive_split, SplitResult};
+
 /// Structure that represents a pair of input and output scripts. Typically, the prover
 /// wants to prove `script(input) == output`
 pub struct IOPair<const INPUT_SIZE: usize, const OUTPUT_SIZE: usize> {
@@ -46,5 +48,10 @@ pub trait SplitableScript<const INPUT_SIZE: usize, const OUTPUT_SIZE: usize> {
     fn verify_random() -> bool {
         let IOPair { input, output } = Self::generate_valid_io_pair();
         Self::verify(input, output)
+    }
+
+    /// Splits the script into smaller parts
+    fn split() -> SplitResult {
+        naive_split(Self::script())
     }
 }

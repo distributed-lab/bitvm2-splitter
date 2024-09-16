@@ -2,3 +2,4 @@
 //! together with all auxiliary functions and data structures.
 
 pub mod script;
+pub mod core;

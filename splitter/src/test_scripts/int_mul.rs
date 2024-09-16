@@ -53,4 +53,14 @@ mod tests {
     fn test_verify() {
         assert!(U254MulScript::verify_random());
     }
+
+    #[test]
+    fn test_split() {
+        println!("{}", U254Windowed::OP_WIDENINGMUL::<U508>().len());
+
+        let split_result = U254MulScript::split();
+        for script in split_result.scripts {
+            println!("{}", script.len());
+        }
+    }
 }
