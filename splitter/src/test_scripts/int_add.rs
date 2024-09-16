@@ -1,5 +1,6 @@
 //! This module contains the test script
-//! for performing the addition of two large integers (exceeding standard Bitcoin 31-bit integers)
+//! for performing the addition of two large integers 
+//! (exceeding standard Bitcoin 31-bit integers)
 
 use crate::{
     split::script::{IOPair, SplitableScript},
@@ -22,6 +23,7 @@ use rand_chacha::ChaCha20Rng;
 /// Script that performs the addition of two 254-bit numbers
 pub struct U254AddScript;
 
+
 /// Input size is double the number of limbs of U254 since we are adding two numbers
 const INPUT_SIZE: usize = 2 * U254::N_LIMBS;
 /// Output size is the number of limbs of U254
@@ -35,6 +37,7 @@ impl SplitableScript<{ INPUT_SIZE }, { OUTPUT_SIZE }> for U254AddScript {
     fn generate_valid_io_pair() -> IOPair<{ INPUT_SIZE }, { OUTPUT_SIZE }> {
         let mut prng = ChaCha20Rng::seed_from_u64(0);
 
+        // Generate two random 254-bit numbers and calculate their sum
         let num_1: BigUint = prng.sample(RandomBits::new(254));
         let num_2: BigUint = prng.sample(RandomBits::new(254));
         let sum: BigUint = (num_1.clone() + num_2.clone()).rem(BigUint::one().shl(254));
