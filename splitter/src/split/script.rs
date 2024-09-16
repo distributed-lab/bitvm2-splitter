@@ -1,16 +1,12 @@
 //! Module containing the structure for scripts that we are going to use
 
-use bitcoin_script_stack::debugger::pushable::Pushable;
+use pushable::Pushable;
 
 use crate::treepp::*;
 
 /// Structure that represents a pair of input and output scripts. Typically, the prover
 /// wants to prove `script(input) == output`
-pub struct IOPair<
-    I, O: Pushable,
-    const INPUT_SIZE: usize, 
-    const OUTPUT_SIZE: usize,
-> {
+pub struct IOPair<I, O: Pushable, const INPUT_SIZE: usize, const OUTPUT_SIZE: usize> {
     pub input: [I; INPUT_SIZE],
     pub output: [O; OUTPUT_SIZE],
 }
