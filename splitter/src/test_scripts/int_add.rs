@@ -7,7 +7,10 @@ use crate::{
 };
 use bitcoin_window_mul::{
     bigint::U254,
-    traits::{arithmeticable::Arithmeticable, integer::NonNativeLimbInteger},
+    traits::{
+        arithmeticable::Arithmeticable,
+        integer::{NonNativeInteger, NonNativeLimbInteger},
+    },
 };
 
 use core::ops::{Rem, Shl};
@@ -19,34 +22,29 @@ use rand_chacha::ChaCha20Rng;
 /// Script that performs the addition of two 254-bit numbers
 pub struct U254AddScript;
 
-type IOType = u32;
+/// Input size is double the number of limbs of U254 since we are adding two numbers
 const INPUT_SIZE: usize = 2 * U254::N_LIMBS;
+/// Output size is the number of limbs of U254
 const OUTPUT_SIZE: usize = U254::N_LIMBS;
 
-impl SplitableScript<IOType, IOType, { INPUT_SIZE }, { OUTPUT_SIZE }> for U254AddScript {
+impl SplitableScript<{ INPUT_SIZE }, { OUTPUT_SIZE }> for U254AddScript {
     fn script() -> Script {
         U254::OP_ADD(1, 0)
     }
 
-    fn generate_valid_io_pair() -> IOPair<IOType, IOType, { INPUT_SIZE }, { OUTPUT_SIZE }> {
+    fn generate_valid_io_pair() -> IOPair<{ INPUT_SIZE }, { OUTPUT_SIZE }> {
         let mut prng = ChaCha20Rng::seed_from_u64(0);
 
-        let a: BigUint = prng.sample(RandomBits::new(254));
-        let b: BigUint = prng.sample(RandomBits::new(254));
-        let c: BigUint = (a.clone() + b.clone()).rem(BigUint::one().shl(254));
-
-        // Input is simply a and b limbs concatenated
-        let mut input = a.to_u32_digits().clone();
-        input.append(&mut b.to_u32_digits());
-
-        // Output is limbs of c
-        let output = c.to_u32_digits();
+        let num_1: BigUint = prng.sample(RandomBits::new(254));
+        let num_2: BigUint = prng.sample(RandomBits::new(254));
+        let sum: BigUint = (num_1.clone() + num_2.clone()).rem(BigUint::one().shl(254));
 
         IOPair {
-            input: input.try_into().expect("Input is not of the correct size"),
-            output: output
-                .try_into()
-                .expect("Output is not of the correct size"),
+            input: script! {
+                { U254::OP_PUSH_U32LESLICE(&num_1.to_u32_digits()) }
+                { U254::OP_PUSH_U32LESLICE(&num_2.to_u32_digits()) }
+            },
+            output: U254::OP_PUSH_U32LESLICE(&sum.to_u32_digits()),
         }
     }
 }

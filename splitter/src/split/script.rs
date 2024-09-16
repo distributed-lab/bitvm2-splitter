@@ -1,43 +1,35 @@
 //! Module containing the structure for scripts that we are going to use
 
-use pushable::Pushable;
-
 use crate::treepp::*;
 
 /// Structure that represents a pair of input and output scripts. Typically, the prover
 /// wants to prove `script(input) == output`
-pub struct IOPair<I, O: Pushable, const INPUT_SIZE: usize, const OUTPUT_SIZE: usize> {
-    pub input: [I; INPUT_SIZE],
-    pub output: [O; OUTPUT_SIZE],
+pub struct IOPair<const INPUT_SIZE: usize, const OUTPUT_SIZE: usize> {
+    /// Input script containing the elements which will be fed to the main script
+    pub input: Script,
+    /// Output script containing the elements which will be compared to the output of the main script
+    pub output: Script,
 }
 
 /// Trait that any script that can be split should implement
-pub trait SplitableScript<I, O: Pushable, const INPUT_SIZE: usize, const OUTPUT_SIZE: usize> {
+pub trait SplitableScript<const INPUT_SIZE: usize, const OUTPUT_SIZE: usize> {
     /// Returns the main logic (f) of the script
     fn script() -> Script;
 
     /// Generates a random valid input for the script
-    fn generate_valid_io_pair() -> IOPair<I, O, INPUT_SIZE, OUTPUT_SIZE>;
+    fn generate_valid_io_pair() -> IOPair<INPUT_SIZE, OUTPUT_SIZE>;
 
     /// Verifies that the input is valid for the script
-    fn verify(input: [I; INPUT_SIZE], output: [O; OUTPUT_SIZE]) -> bool {
-        let output_length = output.len();
-        println!("Output length: {}", output_length);
-
+    fn verify(input: Script, output: Script) -> bool {
         let script = script! {
-            for i in 0..input.len() {
-                { input[i] }
-            }
-
+            { input }
             { Self::script() }
-            for i in 0..input.len() {
-                { output[i] }
-            }
+            { output }
 
             // Now, we need to verify that the output is correct.
             // Since the output is not necessarily a single element, we check
             // elements one by one
-            for i in (0..output_length).rev() {
+            for i in (0..OUTPUT_SIZE).rev() {
                 // { <a_1> <a_2> ... <a_n> <b_1> <b_2> ... <b_n> } <- we need to push element <a_n> to the top of the stack
                 { i+1 } OP_ROLL
                 OP_EQUALVERIFY
