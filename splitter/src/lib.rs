@@ -9,6 +9,8 @@ pub mod treepp {
 }
 
 pub(crate) mod debug;
+pub mod split;
+pub(crate) mod test_scripts;
 
 #[cfg(test)]
 mod tests {
