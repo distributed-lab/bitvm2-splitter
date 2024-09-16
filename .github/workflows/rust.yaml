@@ -1,0 +1,82 @@
+name: Rust
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+env:
+  CARGO_TERM_COLOR: always
+  RUSTFLAGS: -Dwarnings
+  rust_min: 1.74.0 # because of bumpalo (requires 1.74.0)
+                   # clap requires 1.74.0
+  rust_clippy: 1.77.0
+  rust_nightly: nightly-2024-05-05
+
+defaults:
+  run:
+    shell: bash
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: ${{ env.rust_min }}
+      - uses: Swatinem/rust-cache@v2
+      - name: Build
+        run: cargo build --verbose
+
+  clippy:
+    name: clippy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Rust ${{ env.rust_clippy }}
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: ${{ env.rust_clippy }}
+          components: clippy
+      - uses: Swatinem/rust-cache@v2
+      - name: "clippy --all"
+        run: cargo clippy --all --tests --all-features --no-deps
+
+  doc:
+    name: doc
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Rust ${{ env.rust_nightly }}
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: ${{ env.rust_min }}
+      - uses: Swatinem/rust-cache@v2
+      - name: "doc --lib --all-features"
+        run: |
+          cargo doc --lib --no-deps --all-features --document-private-items
+        env:
+          RUSTDOCFLAGS: -Dwarnings
+
+  test:
+    name: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Rust ${{ env.rust_stable }}
+        uses: dtolnay/rust-toolchain@stable
+      - name: Install cargo-nextest
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-nextest
+      - uses: Swatinem/rust-cache@v2
+      - name: test full
+        run: |
+          set -euxo pipefail
+          cargo nextest run
+          cargo test --doc
