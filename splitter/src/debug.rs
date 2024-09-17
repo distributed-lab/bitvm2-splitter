@@ -34,7 +34,10 @@ impl fmt::Display for ExecuteInfo {
 pub fn execute_script(script: ScriptBuf) -> ExecuteInfo {
     let mut exec = Exec::new(
         ExecCtx::Tapscript,
-        Options::default(),
+        Options {
+            require_minimal: false,
+            ..Default::default()
+        },
         TxTemplate {
             tx: Transaction {
                 version: bitcoin::transaction::Version::TWO,
