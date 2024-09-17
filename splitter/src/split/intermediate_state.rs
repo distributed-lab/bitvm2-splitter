@@ -35,11 +35,11 @@ impl IntermediateState {
             // Checks for length of the stack and altstack
             // are used to avoid panic when referencing the first element
             // of the stack or altstack (by using get(0) method)
-            if stack.len() > 0 {
+            if !stack.is_empty() {
                 { stack.get(0) }
             }
 
-            if altstack.len() > 0 {
+            if !altstack.is_empty() {
                 { altstack.get(0) }
 
                 for _ in 0..altstack.len() {
