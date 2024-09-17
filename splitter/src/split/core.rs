@@ -8,25 +8,20 @@ use crate::{split::intermediate_state::IntermediateState, treepp::*};
 /// Maximum size of the script in bytes
 pub(super) const MAX_SCRIPT_SIZE: usize = 30000;
 
+// TODO: Currently, the chunk size splits the script into the parts of the same size IN TERMS OF INSTRUCTIONS, not bytes.
 /// Splits the given script into smaller parts
 pub(super) fn split_into_shards(script: &Script, chunk_size: usize) -> Vec<Script> {
     let instructions: Vec<Instruction> = script
         .instructions()
-        .map(|instruction| {
-            let instruction = instruction.expect("script is most likely corrupted");
-            instruction
-        }).collect();
-    
+        .map(|instruction| instruction.expect("script is most likely corrupted"))
+        .collect();
+
     instructions
         .chunks(chunk_size)
         .map(|chunk| {
-            for instruction in chunk {
-                println!("{:?}", instruction);
-            }
-
             let mut shard = Script::new();
             for instruction in chunk {
-                shard.push_instruction(instruction.clone());
+                shard.push_instruction(*instruction);
             }
 
             shard
@@ -64,6 +59,7 @@ pub(super) fn naive_split(input: Script, script: Script) -> SplitResult {
         shards.len(),
         "Intermediate results should be the same as the number of scripts"
     );
+
     SplitResult {
         shards,
         intermediate_states,

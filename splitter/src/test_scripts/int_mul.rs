@@ -58,7 +58,10 @@ mod tests {
     #[test]
     fn test_split() {
         // First, we generate the pair of input and output scripts
-        let IOPair { input, output } = U254MulScript::generate_valid_io_pair();
+        let IOPair {
+            input,
+            output: _output,
+        } = U254MulScript::generate_valid_io_pair();
 
         let split_result = U254MulScript::split(input);
         for shard in split_result.shards {
