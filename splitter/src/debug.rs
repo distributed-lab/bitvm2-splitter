@@ -50,18 +50,18 @@ pub fn execute_script(script: ScriptBuf) -> ExecuteInfo {
         vec![],
     )
     .expect("error when creating the execution body");
-    
+
     // Execute all the opcodes while possible
     loop {
         if exec.exec_next().is_err() {
             break;
         }
     }
-    
+
     // Obtaining the result of the execution
     let result = exec.result().unwrap();
-    
-    ExecuteInfo { 
+
+    ExecuteInfo {
         success: result.success,
         error: result.error.clone(),
         main_stack: exec.stack().clone(),
@@ -112,7 +112,7 @@ pub fn execute_script_no_stack_limit(script: bitcoin::ScriptBuf) -> ExecuteInfo 
     // Get the result of the execution
     let result = exec.result().unwrap();
 
-    ExecuteInfo { 
+    ExecuteInfo {
         success: result.success,
         error: result.error.clone(),
         main_stack: exec.stack().clone(),
