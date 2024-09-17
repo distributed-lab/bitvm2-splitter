@@ -7,7 +7,7 @@ use crate::{
 
 use super::{
     core::split_into_shards,
-    intermediate_state::{self, IntermediateState},
+    intermediate_state::IntermediateState,
 };
 
 /// Tests whether splitting the script into subprograms (shards)
@@ -139,7 +139,7 @@ fn test_from_input_script_mainstack_only() {
 }
 
 #[test]
-fn test_state_from_input_script_mainstack_and_altstack() {
+fn test_state_from_input_script_mainstack_and_altstack_1() {
     // Adding input and verification scripts
     let input_script = script! {
         {13123} {1235}
@@ -166,6 +166,43 @@ fn test_state_from_input_script_mainstack_and_altstack() {
         { stack_to_script(&altstack) }
         { 5 }
         OP_EQUAL
+    };
+    let result = execute_script(verify_altstack_script);
+    assert!(result.success, "altstack verification failed");
+}
+
+#[test]
+fn test_state_from_input_script_mainstack_and_altstack_2() {
+    // Adding input and verification scripts
+    let input_script = script! {
+        { 13123 } { 1235 }
+    };
+    let main_script = script! {
+        OP_ADD OP_1 OP_ADD OP_3 OP_ADD 
+        { 5 }  OP_TOALTSTACK 
+        { 100 } OP_TOALTSTACK 
+        { 20050 } OP_TOALTSTACK
+    };
+
+    // Creating an intermediate state
+    let IntermediateState { stack, altstack } =
+        IntermediateState::from_input_script(&input_script, &main_script);
+
+    // Now, checking that our stack is simply a number 14362
+    let verify_mainstack_script = script! {
+        { stack_to_script(&stack) }
+        { 14362 }
+        OP_EQUAL
+    };
+    let result = execute_script(verify_mainstack_script);
+    assert!(result.success, "mainstack verification failed");
+
+    // Asserting that the altstack is correct
+    let verify_altstack_script = script! {
+        { stack_to_script(&altstack) }
+        { 20050 } OP_EQUALVERIFY
+        { 100 } OP_EQUALVERIFY
+        { 5 } OP_EQUAL
     };
     let result = execute_script(verify_altstack_script);
     assert!(result.success, "altstack verification failed");
@@ -200,14 +237,14 @@ fn test_state_from_state() {
     };
 
     let result = execute_script(verify_main_stack_script);
-    assert!(result.success, "Mainstack verification failed");
+    assert!(result.success, "z1 mainstack verification failed");
 
     let verify_alt_stack_script = script! {
         { stack_to_script(&z1.altstack) }
         OP_1 OP_EQUAL
     };
     let result = execute_script(verify_alt_stack_script);
-    assert!(result.success, "Altstack verification failed");
+    assert!(result.success, "z1 altstack verification failed");
 
     // Now, getting the second state
     let z2 = IntermediateState::from_intermediate_result(&z1, &shards[1]);
@@ -219,7 +256,7 @@ fn test_state_from_state() {
         { 10 } OP_EQUAL
     };
     let result = execute_script(verify_main_stack_script);
-    assert!(result.success, "Mainstack verification failed");
+    assert!(result.success, "z2 mainstack verification failed");
 
     let verify_alt_stack_script = script! {
         { stack_to_script(&z2.altstack) }
@@ -228,5 +265,22 @@ fn test_state_from_state() {
         OP_1 OP_EQUAL
     };
     let result = execute_script(verify_alt_stack_script);
-    assert!(result.success, "Altstack verification failed");
+    assert!(result.success, "z2 altstack verification failed");
+
+    // Now, getting the third state
+    let z3 = IntermediateState::from_intermediate_result(&z2, &shards[2]);
+
+    // Asserting that both the stack and altstack are correct
+    let verify_main_stack_script = script! {
+        { stack_to_script(&z3.stack) }
+        OP_1 OP_EQUALVERIFY
+        OP_1 OP_EQUALVERIFY
+        OP_0 OP_EQUALVERIFY
+        { 20 } OP_EQUALVERIFY
+        { 10 } OP_EQUAL
+    };
+    let result = execute_script(verify_main_stack_script);
+    assert!(result.success, "z3 mainstack verification failed");
+
+    assert!(z3.altstack.is_empty(), "z3 altstack should be empty at this point");
 }
