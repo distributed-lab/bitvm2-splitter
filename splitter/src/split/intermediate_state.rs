@@ -42,7 +42,8 @@ impl IntermediateState {
             if !altstack.is_empty() {
                 { stack_to_script(altstack) }
 
-                for _ in 0..altstack.len() {
+                for i in (0..altstack.len()).into_iter().rev() {
+                    { i } OP_ROLL
                     OP_TOALTSTACK
                 }
             }
