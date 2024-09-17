@@ -1,5 +1,5 @@
 //! This module contains the test script
-//! for performing the addition of two large integers 
+//! for performing the addition of two large integers
 //! (exceeding standard Bitcoin 31-bit integers)
 
 use crate::{
@@ -22,7 +22,6 @@ use rand_chacha::ChaCha20Rng;
 
 /// Script that performs the addition of two 254-bit numbers
 pub struct U254AddScript;
-
 
 /// Input size is double the number of limbs of U254 since we are adding two numbers
 const INPUT_SIZE: usize = 2 * U254::N_LIMBS;
