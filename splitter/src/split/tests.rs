@@ -5,10 +5,7 @@ use crate::{
     utils::stack_to_script,
 };
 
-use super::{
-    core::split_into_shards,
-    intermediate_state::IntermediateState,
-};
+use super::{core::split_into_shards, intermediate_state::IntermediateState};
 
 /// Tests whether splitting the script into subprograms (shards)
 /// works properly for the most basic script
@@ -178,9 +175,9 @@ fn test_state_from_input_script_mainstack_and_altstack_2() {
         { 13123 } { 1235 }
     };
     let main_script = script! {
-        OP_ADD OP_1 OP_ADD OP_3 OP_ADD 
-        { 5 }  OP_TOALTSTACK 
-        { 100 } OP_TOALTSTACK 
+        OP_ADD OP_1 OP_ADD OP_3 OP_ADD
+        { 5 }  OP_TOALTSTACK
+        { 100 } OP_TOALTSTACK
         { 20050 } OP_TOALTSTACK
     };
 
@@ -282,5 +279,8 @@ fn test_state_from_state() {
     let result = execute_script(verify_main_stack_script);
     assert!(result.success, "z3 mainstack verification failed");
 
-    assert!(z3.altstack.is_empty(), "z3 altstack should be empty at this point");
+    assert!(
+        z3.altstack.is_empty(),
+        "z3 altstack should be empty at this point"
+    );
 }
