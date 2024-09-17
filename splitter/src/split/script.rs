@@ -20,6 +20,31 @@ pub struct SplitResult {
     pub intermediate_states: Vec<IntermediateState>,
 }
 
+impl SplitResult {
+    /// Creates a new instance of the SplitResult
+    pub fn new(shards: Vec<Script>, intermediate_states: Vec<IntermediateState>) -> Self {
+        Self {
+            shards,
+            intermediate_states,
+        }
+    }
+
+    /// Returns the last intermediate state, ignoring the possibility of the empty vector
+    pub fn must_last_state(&self) -> &IntermediateState {
+        self.intermediate_states
+            .last()
+            .expect("Intermediate states should not be empty")
+    }
+
+    /// Returns the total size of the states (stack + altstack)
+    pub fn total_states_size(&self) -> usize {
+        self.intermediate_states
+            .iter()
+            .map(|state| state.stack.len() + state.altstack.len())
+            .sum()
+    }
+}
+
 /// Trait that any script that can be split should implement
 pub trait SplitableScript<const INPUT_SIZE: usize, const OUTPUT_SIZE: usize> {
     const INPUT_SIZE: usize = INPUT_SIZE;

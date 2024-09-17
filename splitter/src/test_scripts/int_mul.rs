@@ -98,14 +98,16 @@ mod tests {
         // First, we generate the pair of input and output scripts
         let IOPair { input, output } = U254MulScript::generate_valid_io_pair();
 
+        // Splitting the script into shards
         let split_result = U254MulScript::split(input);
-        
-        // Now, let us check the last shard
-        let last_state = split_result.intermediate_states.last().unwrap();
-        
-        println!("Expect: {:?}", output.as_script().to_asm_string());
-        println!("Actual: {:?}", stack_to_script(&last_state.stack).to_asm_string());
 
+        // Checking the last state (which must be equal to the result of the multiplication)
+        let last_state = split_result.must_last_state();
+
+        // Altstack must be empty
+        assert!(last_state.altstack.is_empty(), "altstack is not empty!");
+
+        // The element of the mainstack must be equal to the actual output
         let verification_script = script! {
             { stack_to_script(&last_state.stack) }
             { output }
@@ -113,6 +115,6 @@ mod tests {
         };
 
         let result = execute_script(verification_script);
-        assert!(result.success, "Verification has failed");
+        assert!(result.success, "verification has failed");
     }
 }
