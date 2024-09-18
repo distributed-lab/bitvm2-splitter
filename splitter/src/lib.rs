@@ -8,7 +8,11 @@ pub mod treepp {
     pub use bitcoin::ScriptBuf as Script;
 }
 
+pub mod split;
+
 pub(crate) mod debug;
+pub(crate) mod test_scripts;
+pub(crate) mod utils;
 
 #[cfg(test)]
 mod tests {

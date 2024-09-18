@@ -1,90 +1,45 @@
-use bitcoin::{hashes::Hash, hex::DisplayHex, Opcode, TapLeafHash, Transaction};
+use bitcoin::{hashes::Hash, ScriptBuf, TapLeafHash, Transaction};
 use bitcoin_scriptexec::{Exec, ExecCtx, ExecError, ExecStats, Options, Stack, TxTemplate};
 use core::fmt;
 
-/// A wrapper for the stack types to print them better.
-pub struct FmtStack(Stack);
-impl fmt::Display for FmtStack {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let mut iter = self.0.iter_str().enumerate().peekable();
-        write!(f, "\n0:\t\t ")?;
-        while let Some((index, item)) = iter.next() {
-            write!(f, "0x{:8}", item.as_hex())?;
-            if iter.peek().is_some() {
-                if (index + 1) % f.width().unwrap() == 0 {
-                    write!(f, "\n{}:\t\t", index + 1)?;
-                }
-                write!(f, " ")?;
-            }
-        }
-        Ok(())
-    }
-}
-
-impl FmtStack {
-    pub fn len(&self) -> usize {
-        self.0.len()
-    }
-
-    pub fn is_empty(&self) -> bool {
-        self.0.is_empty()
-    }
-
-    pub fn get(&self, index: usize) -> Vec<u8> {
-        self.0.get(index)
-    }
-}
-
-impl fmt::Debug for FmtStack {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", self)?;
-        Ok(())
-    }
-}
-
+/// Information about the status of the script execution.
 #[derive(Debug)]
 pub struct ExecuteInfo {
     pub success: bool,
     pub error: Option<ExecError>,
-    pub final_stack: FmtStack,
-    pub remaining_script: String,
-    pub last_opcode: Option<Opcode>,
+    pub main_stack: Stack,
+    pub alt_stack: Stack,
     pub stats: ExecStats,
 }
 
 impl fmt::Display for ExecuteInfo {
+    /// Formats the `ExecuteInfo` struct for display.
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         if self.success {
             writeln!(f, "Script execution successful.")?;
         } else {
             writeln!(f, "Script execution failed!")?;
         }
+
         if let Some(ref error) = self.error {
             writeln!(f, "Error: {:?}", error)?;
         }
-        if !self.remaining_script.is_empty() {
-            writeln!(f, "Remaining Script: {}", self.remaining_script)?;
-        }
-        if !self.final_stack.is_empty() {
-            match f.width() {
-                None => writeln!(f, "Final Stack: {:4}", self.final_stack)?,
-                Some(width) => {
-                    writeln!(f, "Final Stack: {:width$}", self.final_stack, width = width)?
-                }
-            }
-        }
-        if let Some(ref opcode) = self.last_opcode {
-            writeln!(f, "Last Opcode: {:?}", opcode)?;
-        }
+
         writeln!(f, "Stats: {:?}", self.stats)?;
         Ok(())
     }
 }
 
-pub fn execute_script(script: bitcoin::ScriptBuf) -> ExecuteInfo {
+/// Executes the given script and returns the result of the execution
+/// (success, error, stack, etc.)
+pub fn execute_script(script: ScriptBuf) -> ExecuteInfo {
     let mut exec = Exec::new(
         ExecCtx::Tapscript,
-        Options::default(),
+        Options {
+            // TODO: Figure our how to optimize stack_to_script function to avoid disabling require_minimal
+            require_minimal: false,
+            ..Default::default()
+        },
         TxTemplate {
             tx: Transaction {
                 version: bitcoin::transaction::Version::TWO,
@@ -99,34 +54,31 @@ pub fn execute_script(script: bitcoin::ScriptBuf) -> ExecuteInfo {
         script,
         vec![],
     )
-    .expect("error creating exec");
+    .expect("error when creating the execution body");
 
+    // Execute all the opcodes while possible
     loop {
         if exec.exec_next().is_err() {
             break;
         }
     }
-    let res = exec.result().unwrap();
+
+    // Obtaining the result of the execution
+    let result = exec.result().unwrap();
+
     ExecuteInfo {
-        success: res.success,
-        error: res.error.clone(),
-        last_opcode: res.opcode,
-        final_stack: FmtStack(exec.stack().clone()),
-        remaining_script: exec.remaining_script().to_asm_string(),
+        success: result.success,
+        error: result.error.clone(),
+        main_stack: exec.stack().clone(),
+        alt_stack: exec.altstack().clone(),
         stats: exec.stats().clone(),
     }
 }
 
-/// Prints the size of the script in bytes.
-#[allow(dead_code)]
-pub fn print_script_size(name: &str, script: bitcoin::ScriptBuf) {
-    println!("{} script is {} bytes in size", name, script.len());
-}
-
-// Execute a script on stack without `MAX_STACK_SIZE` limit.
-// This function is only used for script test, not for production.
-//
-// NOTE: Only for test purposes.
+/// Execute a script on stack without `MAX_STACK_SIZE` limit.
+/// This function is only used for script test, not for production.
+///
+/// NOTE: Only for test purposes.
 #[allow(dead_code)]
 pub fn execute_script_no_stack_limit(script: bitcoin::ScriptBuf) -> ExecuteInfo {
     // Get the default options for the script exec.
@@ -153,20 +105,23 @@ pub fn execute_script_no_stack_limit(script: bitcoin::ScriptBuf) -> ExecuteInfo 
         script,
         vec![],
     )
-    .expect("error creating exec");
+    .expect("error while creating the execution body");
 
+    // Execute all the opcodes while possible
     loop {
         if exec.exec_next().is_err() {
             break;
         }
     }
-    let res = exec.result().unwrap();
+
+    // Get the result of the execution
+    let result = exec.result().unwrap();
+
     ExecuteInfo {
-        success: res.success,
-        error: res.error.clone(),
-        last_opcode: res.opcode,
-        final_stack: FmtStack(exec.stack().clone()),
-        remaining_script: exec.remaining_script().to_asm_string(),
+        success: result.success,
+        error: result.error.clone(),
+        main_stack: exec.stack().clone(),
+        alt_stack: exec.altstack().clone(),
         stats: exec.stats().clone(),
     }
 }
@@ -199,6 +154,7 @@ mod test {
             }
             OP_1
         };
+
         let exec_result = execute_script_no_stack_limit(script);
         assert!(exec_result.success);
     }
