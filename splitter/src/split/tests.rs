@@ -29,9 +29,9 @@ fn test_split_basic() {
 
     // Asserting that we have three shards and each shard has at most three elements in the stack
     assert_eq!(shards.len(), 3, "Shards number is incorrect");
-    for i in 0..3 {
-        println!("Shard {}: {}", i, shards[i].to_asm_string());
-        println!("Shard {} size: {}", i, shards[i].len());
+    for (i, shard) in shards.clone().into_iter().enumerate() {
+        println!("Shard {}: {}", i, shard.to_asm_string());
+        println!("Shard {} size: {}", i, shard.len());
     }
 
     // Asserting that the shards are correct

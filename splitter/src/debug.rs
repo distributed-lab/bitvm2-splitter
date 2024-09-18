@@ -20,6 +20,7 @@ impl fmt::Display for ExecuteInfo {
         } else {
             writeln!(f, "Script execution failed!")?;
         }
+
         if let Some(ref error) = self.error {
             writeln!(f, "Error: {:?}", error)?;
         }
@@ -35,6 +36,7 @@ pub fn execute_script(script: ScriptBuf) -> ExecuteInfo {
     let mut exec = Exec::new(
         ExecCtx::Tapscript,
         Options {
+            // TODO: Figure our how to optimize stack_to_script function to avoid disabling require_minimal
             require_minimal: false,
             ..Default::default()
         },
