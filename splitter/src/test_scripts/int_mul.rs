@@ -48,11 +48,9 @@ impl SplitableScript<{ INPUT_SIZE }, { OUTPUT_SIZE }> for U254MulScript {
 
 #[cfg(test)]
 mod tests {
-    use bitcoin_window_mul::traits::comparable::Comparable;
-
-    use crate::utils::stack_to_script;
-
     use super::*;
+    use crate::utils::stack_to_script;
+    use bitcoin_window_mul::traits::comparable::Comparable;
 
     #[test]
     fn test_verify() {
@@ -116,5 +114,9 @@ mod tests {
 
         let result = execute_script(verification_script);
         assert!(result.success, "verification has failed");
+
+        // Now, we debug the total size of the states
+        let total_size = split_result.total_states_size();
+        println!("Total size of the states: {} bytes", total_size);
     }
 }
