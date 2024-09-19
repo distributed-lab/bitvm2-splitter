@@ -223,10 +223,10 @@ pub fn u32_rrot(rot_num: usize) -> Script {
 #[cfg(test)]
 mod tests {
 
-    use crate::debug::run_and_assert;
-    use crate::treepp::script;
     use crate::bitvm::u32::u32_rrot::*;
     use crate::bitvm::u32::u32_std::*;
+    use crate::debug::run_and_assert;
+    use crate::treepp::script;
     use rand::Rng;
 
     fn rrot(x: u32, n: usize) -> u32 {

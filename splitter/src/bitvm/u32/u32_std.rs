@@ -162,9 +162,9 @@ pub fn u32_compress() -> Script {
 
 #[cfg(test)]
 mod test {
+    use crate::bitvm::u32::u32_std::*;
     use crate::debug::run_and_assert;
     use crate::treepp::script;
-    use crate::bitvm::u32::u32_std::*;
     use rand::Rng;
 
     #[test]

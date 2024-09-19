@@ -1,5 +1,5 @@
-use crate::treepp::*;
 use crate::bitvm::u32::u32_zip::{u32_copy_zip, u32_zip};
+use crate::treepp::*;
 
 pub fn u8_add_carry() -> Script {
     script! {
@@ -32,6 +32,7 @@ pub fn u8_add() -> Script {
 
 /// Addition of two u32 values represented as u8
 /// Copies the first summand `a` and drops `b`
+#[allow(dead_code)]
 pub fn u32_add(a: u32, b: u32) -> Script {
     assert_ne!(a, b);
     script! {
@@ -104,10 +105,10 @@ pub fn u32_add_drop(a: u32, b: u32) -> Script {
 
 #[cfg(test)]
 mod test {
-    use crate::debug::run_and_assert;
-    use crate::treepp::script;
     use crate::bitvm::u32::u32_add::*;
     use crate::bitvm::u32::u32_std::u32_push;
+    use crate::debug::run_and_assert;
+    use crate::treepp::script;
 
     #[test]
     fn test_u32_add() {
@@ -123,7 +124,7 @@ mod test {
             0xee OP_EQUALVERIFY
             0xee OP_EQUAL
         };
-        
+
         run_and_assert(script);
     }
 }
