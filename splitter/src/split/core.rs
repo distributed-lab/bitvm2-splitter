@@ -6,7 +6,7 @@ use super::script::SplitResult;
 use crate::{split::intermediate_state::IntermediateState, treepp::*};
 
 /// Maximum size of the script in bytes
-pub(super) const MAX_SCRIPT_SIZE: usize = 30000;
+pub(super) const MAX_SCRIPT_SIZE: usize = 18000;
 
 // TODO: Currently, the chunk size splits the script into the parts of the same size IN TERMS OF INSTRUCTIONS, not bytes.
 /// Splits the given script into smaller parts

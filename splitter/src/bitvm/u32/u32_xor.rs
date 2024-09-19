@@ -1,7 +1,7 @@
 #![allow(dead_code)]
 
-use crate::treepp::*;
 use crate::bitvm::u32::u32_zip::u32_copy_zip;
+use crate::treepp::*;
 
 /// Bitwise XOR of two u8 elements
 ///
@@ -339,13 +339,15 @@ pub fn u8_drop_xor_table() -> Script {
 #[cfg(test)]
 mod tests {
 
-    use crate::debug::run_and_assert;
-    use crate::treepp::*;
     use crate::bitvm::u32::u32_std::*;
     use crate::bitvm::u32::u32_xor::{u32_xor, u8_drop_xor_table, u8_push_xor_table};
+    use crate::debug::run_and_assert;
+    use crate::treepp::*;
     use rand::Rng;
 
-    fn xor(x: u32, y: u32) -> u32 { x ^ y }
+    fn xor(x: u32, y: u32) -> u32 {
+        x ^ y
+    }
 
     #[test]
     fn test_xor() {

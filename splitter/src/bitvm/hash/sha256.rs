@@ -1,7 +1,5 @@
 #![allow(non_snake_case)]
 
-use crate::pseudo::push_to_stack;
-use crate::treepp::*;
 use crate::bitvm::u32::u32_add::u32_add_drop;
 use crate::bitvm::u32::u32_std::{u32_dup, u32_roll};
 use crate::bitvm::u32::{
@@ -10,6 +8,8 @@ use crate::bitvm::u32::{
     u32_std::{u32_drop, u32_fromaltstack, u32_pick, u32_push, u32_toaltstack},
     u32_xor::{u32_xor, u8_drop_xor_table, u8_push_xor_table},
 };
+use crate::pseudo::push_to_stack;
+use crate::treepp::*;
 
 const K: [u32; 64] = [
     0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5,
@@ -130,12 +130,12 @@ pub fn sha256_80bytes() -> Script {
 /// reorder bytes for u32
 pub fn padding_add_roll(num_bytes: usize) -> Script {
     assert!(num_bytes < 512);
-    let padding_num;
-    if (num_bytes % 64) < 56 {
-        padding_num = 55 - (num_bytes % 64);
+
+    let padding_num = if (num_bytes % 64) < 56 {
+        55 - (num_bytes % 64)
     } else {
-        padding_num = 64 + 55 - (num_bytes % 64);
-    }
+        64 + 55 - (num_bytes % 64)
+    };
 
     let u32_num = (num_bytes + padding_num + 9) / 4;
     script! {
@@ -914,10 +914,10 @@ pub fn maj(x: u32, y: u32, z: u32, stack_depth: u32) -> Script {
 
 #[cfg(test)]
 mod tests {
-    use crate::bitvm::hash::utils::push_bytes_hex;
     use crate::bitvm::hash::sha256::*;
-    use crate::treepp::*;
+    use crate::bitvm::hash::utils::push_bytes_hex;
     use crate::bitvm::u32::u32_std::{u32_equal, u32_equalverify};
+    use rand::RngCore;
     use sha2::{Digest, Sha256};
 
     fn rrot(x: u32, n: usize) -> u32 {
@@ -969,6 +969,55 @@ mod tests {
     }
 
     #[test]
+    fn test_random_sha256() {
+        // Number of bytes for a random array
+        const BYTES_NUMBER: usize = 80;
+
+        // Generate a random array of bytes
+        let mut data = [0; BYTES_NUMBER];
+        rand::thread_rng().fill_bytes(&mut data);
+        let data_hex = hex::encode(&data);
+
+        // Creating a SHA-256 hasher
+        let mut hasher = Sha256::new();
+        hasher.update(&data);
+        let mut result = hasher.finalize();
+
+        // Now, doing the same thing again, but for the current digest
+        hasher = Sha256::new();
+        hasher.update(result);
+        result = hasher.finalize();
+        let result = hex::encode(result);
+
+        let script = script! {
+            { push_bytes_hex(data_hex.as_str()) }
+            { sha256(BYTES_NUMBER) }
+            { sha256(32) }
+
+            { push_bytes_hex(result.as_str()) }
+
+            for _ in 0..32 {
+                OP_TOALTSTACK
+            }
+
+            for i in 1..32 {
+                {i}
+                OP_ROLL
+            }
+
+            for _ in 0..32 {
+                OP_FROMALTSTACK
+                OP_EQUALVERIFY
+            }
+
+            OP_TRUE
+        };
+
+        let exec_result = execute_script(script);
+        assert!(exec_result.success, "Execution failed: {}", exec_result);
+    }
+
+    #[test]
     fn test_padding_add_roll() {
         let hex_in = "6162636462636465636465666465666765666768666768696768696a68696a6b696a6b6c6a6b6c6d6b6c6d6e6c6d6e6f6d6e6f706e6f7071";
 
@@ -991,9 +1040,8 @@ mod tests {
                 {u32_equalverify()} //
             }
         };
+
         execute_script(script);
-        // assert!(res.success);
-        // println!("result {:100}", res);
     }
 
     #[test]

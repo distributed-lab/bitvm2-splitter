@@ -1,7 +1,7 @@
 #![allow(dead_code)]
 
-use crate::treepp::*;
 use crate::bitvm::u32::u32_zip::u32_copy_zip;
+use crate::treepp::*;
 
 /// The bitwise AND of two u8 elements.
 /// Expects the u8_xor_table to be on the stack
@@ -98,14 +98,16 @@ pub fn u32_and(a: u32, b: u32, stack_size: u32) -> Script {
 #[cfg(test)]
 mod tests {
 
-    use crate::debug::run_and_assert;
-    use crate::treepp::script;
     use crate::bitvm::u32::u32_and::*;
     use crate::bitvm::u32::u32_std::*;
     use crate::bitvm::u32::u32_xor::{u8_drop_xor_table, u8_push_xor_table};
+    use crate::debug::run_and_assert;
+    use crate::treepp::script;
     use rand::Rng;
 
-    fn and(x: u32, y: u32) -> u32 { x & y }
+    fn and(x: u32, y: u32) -> u32 {
+        x & y
+    }
 
     #[test]
     fn test_and() {
