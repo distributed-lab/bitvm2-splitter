@@ -7,3 +7,4 @@
 
 pub(crate) mod int_add;
 pub(crate) mod int_mul;
+pub(crate) mod sha256;
