@@ -19,3 +19,13 @@ Cargo.lock
 #  and can be added to the global gitignore or merged into this file.  For a more nuclear
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
 #.idea/
+
+# ignore latex intermidiate build files
+*.aux
+*.bbl
+*.bcf
+*.blg
+*.out
+*.run.xml
+*.synctex.gz
+*.toc
