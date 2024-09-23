@@ -37,11 +37,13 @@ pdflang={English}}
 
 \begin{abstract}
   Assume some user wants to publicly execute a large program on the
-  Bitcoin chain using Bitcoin Script, but its implementation is larger
-  than 4 megabytes (for example, a Zero Knowledge proof); that is why it
-  cannot fit in the transaction input. This document is a fast recap of
-  the BitVM2 doc, which proposes optimistic execution verification with
-  fraud proofs in case of incorrectness.
+  Bitcoin chain, but its implementation in the native for Bitcoin
+  scripting language --- Bitcoin Script --- is larger than 4 megabytes
+  (for example, a zero-knowledge verification logic), making it
+  impossible to publish the complex logic on-chain input. This
+  document is a fast recap of the BitVM2 doc, which proposes
+  optimistic execution verification with fraud proofs in case of
+  incorrectness.
 \end{abstract}
 
 \setcounter{tocdepth}{2}
