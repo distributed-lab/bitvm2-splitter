@@ -17,11 +17,11 @@
 \newcommand{\citeprocitem}[2]{\hyper@linkstart{cite}{citeproc_bib_item_#1}#2\hyper@linkend}
 \makeatother
 \usepackage[a4paper, total={6in, 8in}]{geometry}
-\author{Kyrylo Baibula}
+\author{Distributed Lab}
 \date{\today}
 \title{BitVM fast recap}
 \hypersetup{
-  pdfauthor={Kyrylo Baibula},
+  pdfauthor={Distributed Lab},
   pdftitle={BitVM fast recap},
   pdfkeywords={},
   pdfsubject={},
@@ -86,9 +86,9 @@ scalable program execution on Bitcoin.
 
 However, the user (referred in BitVM2 as the operator) only needs to
 prove that the given program \(f\) indeed returns \(y\) for \(x\), or
-\textbf{give others the opportunity} to \textbf{disprove this
-fact}. In our case, this means giving challengers the ability to
-prove that at least one of the sub-programs \(f_i(z_{i-1}) \neq z_i\).
+\textbf{give others the opportunity disprove this fact}. In our case,
+this means giving challengers the ability to prove that at least one
+of the sub-programs \(f_i(z_{i-1}) \neq z_i\).
 
 \section{\textbf{Assert} transaction}\label{sec:assert-tx}
 
@@ -133,7 +133,7 @@ signature verification is added to the script.
 Unlike other digital signature algorithms, the Lamport signature uses
 a pair of random secret and public keys \((sk_{\mathcal{M}},
 pk_{\mathcal{M}})\) that can sign and verify only any message from the
-space \(\mathcal{M} = {\{0, 1\}}^{l}\) of \(l\) -bit messages.
+space \(\mathcal{M} = {\{0, 1\}}^{l}\) of \(\ell\) -bit messages.
 
 However, once the signature \(c_{m}\) is formed, where \(m\) is the message
 being signed, \((sk_{\mathcal{M}}, pk_{\mathcal{M}})\) become tied to \(m\),
