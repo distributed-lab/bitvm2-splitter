@@ -139,10 +139,12 @@ a pair of random secret and public keys \((\mathsf{sk}_{\mathcal{M}},
 space \(\mathcal{M} = {\{0, 1\}}^{l}\) of \(\ell\) -bit messages.
 
 However, once the signature \(c_{m}\) is formed, where \(m\) is the message
-being signed, \((\mathsf{sk}_{\mathcal{M}}, \mathsf{pk}_{\mathcal{M}})\) become tied to \(m\),
+being signed, \((\mathsf{sk}_{\mathcal{M}},
+\mathsf{pk}_{\mathcal{M}})\) become tied to \(m\),
 because any other signature with these keys will compromise the keys
 themselves. Thus, for the message \(m\), the keys \((\mathsf{sk}_{\mathcal{M}},
-\mathsf{pk}_{\mathcal{M}})\) are one-time use. From now on, we will denote them as
+\mathsf{pk}_{\mathcal{M}})\) are one-time use. From now on, we will
+denote them as
 \((\mathsf{sk}_{m}, \mathsf{pk}_m)\).
 
 Thus, by taking the intermediate states \(z_i\) as the message for the
