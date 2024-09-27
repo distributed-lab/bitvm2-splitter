@@ -1,0 +1,24 @@
+
+services:
+  bitcoind:
+    image: lncm/bitcoind:v26.0
+    container_name: bitcoind
+    restart: on-failure
+    stop_grace_period: 30s
+    user: 0:0
+    healthcheck:
+      test: [ "CMD", "bitcoin-cli", "getnetworkinfo" ]
+      interval: 2s
+    volumes:
+      - ./configs/bitcoind.conf:/root/.bitcoin/bitcoin.conf
+      - ./local-volumes/bitcoind:/root/.bitcoin
+    entrypoint:
+      - "sh"
+      - "-c"
+      - "bitcoind"
+    ports:
+      - 18443:18443
+      - 18444:18444
+
+volumes:
+  bitcoind:
