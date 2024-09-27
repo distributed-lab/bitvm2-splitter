@@ -56,6 +56,7 @@ pub(crate) fn init_wallet() -> eyre::Result<Address<NetworkChecked>> {
     let client = init_bitcoin_client()?;
 
     // init wallet
+    tracing::info!("Initilizing wallet...");
     match client.create_wallet(WALLET_NAME, None, None, None, None) {
         Ok(_) => {}
         Err(Error::JsonRpc(jsonrpc::Error::Rpc(RpcError { code: -4, .. }))) => {}
@@ -68,6 +69,7 @@ pub(crate) fn init_wallet() -> eyre::Result<Address<NetworkChecked>> {
         None => client.get_new_address(Some(ADDRESS_LABEL), Some(AddressType::Bech32m))?,
     }
     .assume_checked();
+    tracing::info!(%address, "Got balance for funding");
 
     fund_address(&address)?;
 
@@ -85,17 +87,32 @@ pub(crate) fn fund_address(address: &Address<NetworkChecked>) -> eyre::Result<()
         return Ok(());
     }
 
+    let block_count = client.get_block_count()?;
+
     // if it's only the fresh instance, generate initial 101 blocks
-    if client.get_block_count()? <= 2 {
+    if block_count <= 2 {
+        tracing::info!(
+            block_num = 101,
+            "Bitcoin blockchain is fresh, genereting initial blocks..."
+        );
         client.generate_to_address(101, address)?;
+        return Ok(());
     }
 
     // otherwise geneate blocks until address would have anough
+    tracing::info!(%block_count, "Generating blocks one by one");
     for i in 0..101 {
         client.generate_to_address(i, address)?;
-        if client.get_balance(None, None)? >= MIN_REQUIRED_AMOUNT {
+        let current_balance = client.get_balance(None, None)?;
+        if current_balance >= MIN_REQUIRED_AMOUNT {
             return Ok(());
         }
+        tracing::info!(
+            block_count = { block_count + i },
+            "Generated, still not enough {} < {}",
+            current_balance,
+            MIN_REQUIRED_AMOUNT
+        );
     }
 
     Ok(())

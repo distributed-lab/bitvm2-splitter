@@ -5,6 +5,7 @@ use crate::common::{init_bitcoin_client, init_wallet, MIN_REQUIRED_AMOUNT};
 #[test]
 fn test_ensure_user_has_min_btc() -> eyre::Result<()> {
     color_eyre::install()?;
+    tracing_subscriber::fmt().init();
 
     let client = init_bitcoin_client()?;
 
