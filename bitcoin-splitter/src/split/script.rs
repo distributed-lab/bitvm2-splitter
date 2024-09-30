@@ -1,6 +1,11 @@
 //! Module containing the structure for scripts that we are going to use
 
-use super::{core::naive_split, intermediate_state::IntermediateState};
+use core::fmt;
+
+use super::{
+    core::{naive_split, SplitType},
+    intermediate_state::IntermediateState,
+};
 use crate::treepp::*;
 
 /// Structure that represents a pair of input and output scripts. Typically, the prover
@@ -18,6 +23,26 @@ pub struct SplitResult {
     pub shards: Vec<Script>,
     /// Scripts that contain intermediate states (z values in the paper)
     pub intermediate_states: Vec<IntermediateState>,
+}
+
+impl fmt::Debug for SplitResult {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        writeln!(
+            f,
+            "Number of intermediate states: {}",
+            self.intermediate_states.len()
+        )?;
+        // Debugging first and last shards OPCODEs
+        for (i, shard) in self.shards.iter().enumerate() {
+            const MAX_CHARACTERS_TO_SHOW: usize = 100;
+            let s = shard.to_asm_string();
+            let first_opcodes = &s[..MAX_CHARACTERS_TO_SHOW];
+            let last_opcodes = &s[s.len() - MAX_CHARACTERS_TO_SHOW..];
+
+            writeln!(f, "Shard {}: {}...{}", i, first_opcodes, last_opcodes)?;
+        }
+        Ok(())
+    }
 }
 
 impl SplitResult {
@@ -86,7 +111,7 @@ pub trait SplitableScript<const INPUT_SIZE: usize, const OUTPUT_SIZE: usize> {
     }
 
     /// Splits the script into smaller parts
-    fn split(input: Script) -> SplitResult {
-        naive_split(input, Self::script())
+    fn split(input: Script, split_type: SplitType) -> SplitResult {
+        naive_split(input, Self::script(), split_type)
     }
 }
