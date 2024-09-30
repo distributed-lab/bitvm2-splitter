@@ -48,7 +48,7 @@ impl<const INPUT_SIZE: usize> SplitableScript<INPUT_SIZE, { OUTPUT_SIZE }>
 
 #[cfg(test)]
 mod tests {
-    use crate::utils::stack_to_script;
+    use crate::{split::core::SplitType, utils::stack_to_script};
 
     use super::*;
 
@@ -72,7 +72,7 @@ mod tests {
         );
 
         // Splitting the script into shards
-        let split_result = SHA256ScriptType::split(input.clone());
+        let split_result = SHA256ScriptType::split(input.clone(), SplitType::ByInstructions);
 
         // Now, we are going to concatenate all the shards and verify that the script is also correct
         let verification_script = script! {
@@ -106,7 +106,8 @@ mod tests {
         let IOPair { input, output } = SHA256ScriptType::generate_valid_io_pair();
 
         // Splitting the script into shards
-        let split_result = SHA256ScriptType::split(input);
+        let split_result = SHA256ScriptType::split(input, SplitType::ByInstructions);
+        println!("Split result: {:?}", split_result);
 
         // Checking the last state (which must be equal to the result of the multiplication)
         let last_state = split_result.must_last_state();

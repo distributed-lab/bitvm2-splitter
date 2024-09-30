@@ -1,5 +1,5 @@
 [package]
-name    = "bitvm2-splitter"
+name    = "bitcoin-splitter"
 version = "0.1.0"
 edition = "2021"
 

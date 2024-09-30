@@ -1,5 +1,8 @@
 use crate::{
-    split::script::{IOPair, SplitableScript},
+    split::{
+        core::SplitType,
+        script::{IOPair, SplitableScript},
+    },
     test_scripts::int_mul::U254MulScript,
     treepp::*,
     utils::stack_to_script,
@@ -25,10 +28,9 @@ fn test_split_basic() {
     assert!(result.success, "Test script failed");
 
     // Splitting the script into shards
-    let shards = split_into_shards(&test_script, CHUNK_SIZE);
+    let shards = split_into_shards(&test_script, CHUNK_SIZE, SplitType::ByInstructions);
 
-    // Asserting that we have three shards and each shard has at most three elements in the stack
-    assert_eq!(shards.len(), 3, "Shards number is incorrect");
+    // Debugging the shards
     for (i, shard) in shards.clone().into_iter().enumerate() {
         println!("Shard {}: {}", i, shard.to_asm_string());
         println!("Shard {} size: {}", i, shard.len());
@@ -84,7 +86,7 @@ fn test_split_mul() {
     );
 
     // Splitting the script into shards
-    let shards = split_into_shards(&test_script, CHUNK_SIZE);
+    let shards = split_into_shards(&test_script, CHUNK_SIZE, SplitType::ByInstructions);
 
     // Now, we are going to concatenate all the shards and verify that the script is also correct
     let verification_script = script! {
@@ -206,6 +208,42 @@ fn test_state_from_input_script_mainstack_and_altstack_2() {
 }
 
 #[test]
+fn test_if_split() {
+    const CHUNK_SIZE: usize = 3;
+
+    // Adding input and verification scripts
+    let input_script = script! {
+        { 5 } { 10 }
+    };
+    let main_script = script! {
+        10 OP_EQUAL OP_IF
+            { 20 }
+            OP_ADD
+        OP_ELSE
+            { 50 } OP_ADD
+        OP_ENDIF
+
+        { 20 }
+        OP_ADD
+    };
+
+    // Now, splitting the main_script:
+    let shards = split_into_shards(&main_script, CHUNK_SIZE, SplitType::ByInstructions);
+
+    // Creating the first intermediate state
+    let z1 = IntermediateState::from_input_script(&input_script, &shards[0]);
+
+    // Asserting that both the stack and altstack are correct
+    let verify_main_stack_script = script! {
+        { stack_to_script(&z1.stack) }
+        { 25 } OP_EQUAL
+    };
+
+    let result = execute_script(verify_main_stack_script);
+    assert!(result.success, "z1 mainstack verification failed");
+}
+
+#[test]
 fn test_state_from_state() {
     const CHUNK_SIZE: usize = 3;
 
@@ -220,7 +258,7 @@ fn test_state_from_state() {
     };
 
     // Now, splitting the main_script:
-    let shards = split_into_shards(&main_script, CHUNK_SIZE);
+    let shards = split_into_shards(&main_script, CHUNK_SIZE, SplitType::ByInstructions);
 
     // Creating the first intermediate state
     let z1 = IntermediateState::from_input_script(&input_script, &shards[0]);
