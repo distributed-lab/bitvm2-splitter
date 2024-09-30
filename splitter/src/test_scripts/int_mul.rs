@@ -1,5 +1,5 @@
 //! This module contains the test script
-//! for performing the multiplication of two large integers 
+//! for performing the multiplication of two large integers
 //! (exceeding standard Bitcoin 31-bit integers)
 
 use crate::{
@@ -7,7 +7,8 @@ use crate::{
     treepp::*,
 };
 use bitcoin_window_mul::{
-    bigint::{U254Windowed, U508}, traits::integer::{NonNativeInteger, NonNativeLimbInteger},
+    bigint::{U254Windowed, U508},
+    traits::integer::{NonNativeInteger, NonNativeLimbInteger},
 };
 
 use num_bigint::{BigUint, RandomBits};
@@ -24,7 +25,7 @@ const OUTPUT_SIZE: usize = U508::N_LIMBS;
 
 impl SplitableScript<{ INPUT_SIZE }, { OUTPUT_SIZE }> for U254MulScript {
     fn script() -> Script {
-        U254Windowed::OP_WIDENINGMUL::<U508>() 
+        U254Windowed::OP_WIDENINGMUL::<U508>()
     }
 
     fn generate_valid_io_pair() -> IOPair<{ INPUT_SIZE }, { OUTPUT_SIZE }> {
@@ -56,11 +57,17 @@ mod tests {
 
     #[test]
     fn test_split() {
-        println!("{}", U254Windowed::OP_WIDENINGMUL::<U508>().len());
+        // First, we generate the pair of input and output scripts
+        let IOPair { input, output } = U254MulScript::generate_valid_io_pair();
 
-        let split_result = U254MulScript::split();
-        for script in split_result.scripts {
-            println!("{}", script.len());
+        let split_result = U254MulScript::split(input);
+        for shard in split_result.shards {
+            println!("Shard is of length {}", shard.len());
+        }
+
+        println!("Intermediate results:");
+        for intermediate_result in split_result.intermediate_results {
+            println!("Intermediate results: {};{}", intermediate_result.stack.len(), intermediate_result.altstack.len());
         }
     }
 }
