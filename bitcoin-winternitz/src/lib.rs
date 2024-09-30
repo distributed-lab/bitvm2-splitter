@@ -8,11 +8,14 @@ use std::vec::Vec;
 pub struct SecretKey<const N: usize>(Vec<[u8; N]>);
 
 impl<const N: usize> SecretKey<N> {
+    /// Construct new [`SecretKey`] from given secret parts.
     pub fn new(chunks: Vec<[u8; N]>) -> Self {
         Self(chunks)
     }
 
     #[cfg(feature = "rand")]
+    /// Construct new [`SecretKey`] from seed, by generating required
+    /// number of parts (chunks).
     pub fn from_seed<Seed, Rng>(seed: Seed, chunks_num: usize) -> Self
     where
         Seed: Sized + Default + AsMut<[u8]>,
@@ -29,6 +32,7 @@ impl<const N: usize> SecretKey<N> {
         Self(chunks)
     }
 
+    /// Return public key derived from secret one.
     pub fn public_key<Hash, Eng>(&self) -> PublicKey<N>
     where
         Hash: bitcoin::hashes::Hash<Bytes = [u8; N], Engine = Eng>,
@@ -45,19 +49,18 @@ impl<const N: usize> SecretKey<N> {
         PublicKey::from_hashes::<Hash, _>(hash_chunks)
     }
 
+    /// Generate [`Signature`] from [`Message`].
     pub fn sign<Hash>(&self, msg: &Message) -> Signature<N>
     where
         Hash: bitcoin::hashes::Hash<Bytes = [u8; N]>,
     {
-        let hash_offsets = msg.to_offsets();
-
         let hashes = self
             .0
             .iter()
-            .zip(hash_offsets)
-            .map(|(chunk, times)| {
+            .zip(msg.0.iter())
+            .map(|(chunk, hash_times)| {
                 let mut chunk = *chunk;
-                for _ in 0..times {
+                for _ in 0..*hash_times {
                     chunk = <Hash as bitcoin::hashes::Hash>::hash(chunk.as_slice()).to_byte_array();
                 }
                 chunk
@@ -74,6 +77,8 @@ impl<const N: usize> SecretKey<N> {
 pub struct PublicKey<const N: usize>([u8; N]);
 
 impl<const N: usize> PublicKey<N> {
+    /// Construct [`PublicKey`] from iterator of hashes, by concatinating
+    /// and hashing all sub-hashes.
     pub fn from_hashes<Hash, Eng>(chunks: impl Iterator<Item = [u8; N]>) -> Self
     where
         Hash: bitcoin::hashes::Hash<Bytes = [u8; N], Engine = Eng>,
@@ -88,35 +93,36 @@ impl<const N: usize> PublicKey<N> {
         Self(hasher.midstate())
     }
 
+    /// Verify signature for given message.    
     pub fn verify<Hash, Eng>(&self, msg: &Message, sig: &Signature<N>) -> bool
     where
         Hash: bitcoin::hashes::Hash<Bytes = [u8; N], Engine = Eng>,
         Eng: HashEngine<MidState = [u8; N]>,
     {
-        let offsets = msg.to_offsets();
-
         // or $\hat{y}$
-        let pubkey_chunks = offsets
-            .into_iter()
-            .zip(sig.0.iter())
-            .map(|(offset, sig_chunk)| {
-                let mut sig_chunk = *sig_chunk;
-                for _ in 0..(D - offset) {
-                    sig_chunk =
-                        <Hash as bitcoin::hashes::Hash>::hash(sig_chunk.as_slice()).to_byte_array();
-                }
-                sig_chunk
-            });
+        let pubkey_chunks = msg.0.iter().zip(sig.0.iter()).map(|(offset, sig_chunk)| {
+            let mut sig_chunk = *sig_chunk;
+            for _ in 0..(D - *offset as usize) {
+                sig_chunk =
+                    <Hash as bitcoin::hashes::Hash>::hash(sig_chunk.as_slice()).to_byte_array();
+            }
+            sig_chunk
+        });
 
         *self == (Self::from_hashes::<Hash, Eng>(pubkey_chunks))
     }
 }
 
+/// Fixed value of $d$ specified in original doc.
+///
+/// This value is used to set [`BASE`] of digits the algorithm splits
+/// message by.
 pub const D: usize = 3;
+
 pub const BASE: usize = (D + 1).ilog2() as usize;
 
 /// Representation of $I_d^n$ - the vector of length $n$ with bit
-/// arrays of lentg $d$.
+/// arrays of length $d$.
 ///
 /// # Inner representation
 ///
@@ -126,6 +132,10 @@ pub const BASE: usize = (D + 1).ilog2() as usize;
 pub struct Message(Vec<u8>);
 
 impl Message {
+    /// Construct the $I_d^n$ repsentation of `msg`.
+    ///
+    /// Due to the winternitz paper, message here is splitted into `n0` and
+    /// `n1` `d+1`-base digits.
     pub fn from_bytes(msg: &[u8]) -> Self {
         if msg.is_empty() {
             return Self(Vec::new());
@@ -174,12 +184,9 @@ impl Message {
     pub fn is_empty(&self) -> bool {
         self.len() == 0
     }
-
-    pub fn to_offsets(&self) -> Vec<usize> {
-        self.0.iter().map(|chunk| *chunk as usize).collect()
-    }
 }
 
+/// Winternitz signature. The array of intermidiate hashes of secret key.
 #[derive(Clone, Debug)]
 pub struct Signature<const N: usize>(Vec<[u8; N]>);
 
