@@ -66,8 +66,12 @@ mod tests {
         }
 
         println!("Intermediate results:");
-        for intermediate_result in split_result.intermediate_results {
-            println!("Intermediate results: {};{}", intermediate_result.stack.len(), intermediate_result.altstack.len());
+        for intermediate_result in split_result.intermediate_states {
+            println!(
+                "Intermediate results: {};{}",
+                intermediate_result.stack.len(),
+                intermediate_result.altstack.len()
+            );
         }
     }
 }

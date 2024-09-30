@@ -1,7 +1,7 @@
 //! This module contains the [`IntermediateState`] struct, which is used to store the intermediate
 //! state of the stack and altstack during the execution of a script split into the shards (subprograms).
 
-use crate::{treepp::*, utils::stack_to_script};
+use crate::treepp::*;
 use bitcoin_scriptexec::Stack;
 
 pub struct IntermediateState {
@@ -35,15 +35,14 @@ impl IntermediateState {
             // Checks for length of the stack and altstack
             // are used to avoid panic when referencing the first element
             // of the stack or altstack (by using get(0) method)
-            if !stack.is_empty() {
-                { stack_to_script(stack) }
+            if stack.len() > 0 {
+                { stack.get(0) }
             }
 
-            if !altstack.is_empty() {
-                { stack_to_script(altstack) }
+            if altstack.len() > 0 {
+                { altstack.get(0) }
 
-                for i in (0..altstack.len()).rev() {
-                    { i } OP_ROLL
+                for _ in 0..altstack.len() {
                     OP_TOALTSTACK
                 }
             }

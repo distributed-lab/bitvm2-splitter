@@ -1,10 +1,7 @@
 //! Module containing the structure for scripts that we are going to use
 
-use bitcoin_scriptexec::Stack;
-
+use super::{core::naive_split, intermediate_state::IntermediateState};
 use crate::treepp::*;
-
-use super::core::naive_split;
 
 /// Structure that represents a pair of input and output scripts. Typically, the prover
 /// wants to prove `script(input) == output`
@@ -15,17 +12,12 @@ pub struct IOPair<const INPUT_SIZE: usize, const OUTPUT_SIZE: usize> {
     pub output: Script,
 }
 
-pub struct IntermediateResult {
-    pub stack: Stack,
-    pub altstack: Stack,
-}
-
 /// Structure that represents the result of splitting a script
 pub struct SplitResult {
     /// Scripts (shards) that constitute the input script
     pub shards: Vec<Script>,
-    /// Scripts that contain intermediate results (z values in the paper)
-    pub intermediate_results: Vec<IntermediateResult>,
+    /// Scripts that contain intermediate states (z values in the paper)
+    pub intermediate_states: Vec<IntermediateState>,
 }
 
 /// Trait that any script that can be split should implement
