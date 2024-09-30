@@ -1,9 +1,12 @@
 % Created 2024-09-23 Mon 13:35
 % Intended LaTeX compiler: pdflatex
 %%% TeX-command-extra-options: "-shell-escape"
-\documentclass[11pt]{article}
+
+\documentclass{iacrtrans}
 \usepackage[utf8]{inputenc}
 \usepackage[T1]{fontenc}
+
+% -- Default Packages --
 \usepackage{graphicx}
 \usepackage{longtable}
 \usepackage{wrapfig}
@@ -13,27 +16,31 @@
 \usepackage{amssymb}
 \usepackage{capt-of}
 \usepackage{hyperref}
+
 \makeatletter
 \newcommand{\citeprocitem}[2]{\hyper@linkstart{cite}{citeproc_bib_item_#1}#2\hyper@linkend}
 \makeatother
-\usepackage[a4paper, total={6in, 8in}]{geometry}
-\author{Distributed Lab}
-\date{\today}
-\title{BitVM fast recap}
+
+\author{Kyrylo Baibula \inst{1} \and Oleksandr Kurbatov\inst{1} \and Dmytro Zakharov\inst{1}}
+\institute{Distributed Lab \email{dmytro.zakharov@distributedlab.com}, \email{ok@distributedlab.com}, \email{kyrylo.baybula@distributedlab.com}}
+\title[Verifiable Computation on Bitcoin]{Generic Optimistic Verifiable Computation on Bitcoin: BitVM2 Approach}
+
 \hypersetup{
   pdfauthor={Distributed Lab},
-  pdftitle={BitVM fast recap},
+  pdftitle={BitVM Fast Recap},
   pdfkeywords={},
   pdfsubject={},
   pdfcreator={Emacs 29.4 (Org mode 9.7.11)},
 pdflang={English}}
-\usepackage{biblatex}
 
+\usepackage{biblatex}
 \addbibresource{refs.bib}
 
 \begin{document}
 
 \maketitle
+
+\keywords[]{Bitcoin, Bitcoin Script, Verifiable Computation, Optimistic Verification, BitVM2}
 
 \begin{abstract}
   Assume some user wants to publicly execute a large program on the
