@@ -1,3 +1,4 @@
+use bitcoin::hashes::HashEngine;
 use bitvec::{order::Lsb0, slice::BitSlice};
 use std::vec::Vec;
 
@@ -28,23 +29,20 @@ impl<const N: usize> SecretKey<N> {
         Self(chunks)
     }
 
-    pub fn public_key<Hash>(&self) -> PublicKey<N>
+    pub fn public_key<Hash, Eng>(&self) -> PublicKey<N>
     where
-        Hash: bitcoin::hashes::Hash<Bytes = [u8; N]>,
+        Hash: bitcoin::hashes::Hash<Bytes = [u8; N], Engine = Eng>,
+        Eng: HashEngine<MidState = [u8; N]>,
     {
-        PublicKey(
-            self.0
-                .iter()
-                .map(|chunk| {
-                    let mut chunk = *chunk;
-                    for _ in 0..D {
-                        chunk =
-                            <Hash as bitcoin::hashes::Hash>::hash(chunk.as_slice()).to_byte_array();
-                    }
-                    chunk
-                })
-                .collect::<Vec<_>>(),
-        )
+        let hash_chunks = self.0.iter().map(|chunk| {
+            let mut chunk = *chunk;
+            for _ in 0..D {
+                chunk = <Hash as bitcoin::hashes::Hash>::hash(chunk.as_slice()).to_byte_array();
+            }
+            chunk
+        });
+
+        PublicKey::from_hashes::<Hash, _>(hash_chunks)
     }
 
     pub fn sign<Hash>(&self, msg: &Message) -> Signature<N>
@@ -72,31 +70,45 @@ impl<const N: usize> SecretKey<N> {
 
 /// Public key is hashed $D$ times each of the $N$ chunks of the
 /// [`SecretKey`].
-#[derive(Clone, Debug)]
-pub struct PublicKey<const N: usize>(Vec<[u8; N]>);
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
+pub struct PublicKey<const N: usize>([u8; N]);
 
 impl<const N: usize> PublicKey<N> {
-    pub fn verify<Hash>(&self, msg: &Message, sig: &Signature<N>) -> bool
+    pub fn from_hashes<Hash, Eng>(chunks: impl Iterator<Item = [u8; N]>) -> Self
     where
-        Hash: bitcoin::hashes::Hash<Bytes = [u8; N]>,
+        Hash: bitcoin::hashes::Hash<Bytes = [u8; N], Engine = Eng>,
+        Eng: HashEngine<MidState = [u8; N]>,
+    {
+        let mut hasher = Hash::engine();
+
+        for chunk in chunks {
+            hasher.input(&chunk);
+        }
+
+        Self(hasher.midstate())
+    }
+
+    pub fn verify<Hash, Eng>(&self, msg: &Message, sig: &Signature<N>) -> bool
+    where
+        Hash: bitcoin::hashes::Hash<Bytes = [u8; N], Engine = Eng>,
+        Eng: HashEngine<MidState = [u8; N]>,
     {
         let offsets = msg.to_offsets();
 
-        for ((pubkey_chunk, offset), sig_chunk) in
-            self.0.iter().zip(offsets.into_iter()).zip(sig.0.iter())
-        {
-            let mut sig_chunk = *sig_chunk;
-            for _ in 0..(D - offset) {
-                sig_chunk =
-                    <Hash as bitcoin::hashes::Hash>::hash(sig_chunk.as_slice()).to_byte_array();
-            }
+        // or $\hat{y}$
+        let pubkey_chunks = offsets
+            .into_iter()
+            .zip(sig.0.iter())
+            .map(|(offset, sig_chunk)| {
+                let mut sig_chunk = *sig_chunk;
+                for _ in 0..(D - offset) {
+                    sig_chunk =
+                        <Hash as bitcoin::hashes::Hash>::hash(sig_chunk.as_slice()).to_byte_array();
+                }
+                sig_chunk
+            });
 
-            if *pubkey_chunk != sig_chunk {
-                return false;
-            }
-        }
-
-        true
+        *self == (Self::from_hashes::<Hash, Eng>(pubkey_chunks))
     }
 }
 
@@ -137,7 +149,6 @@ impl Message {
         }
 
         let n1 = ((D * n0).ilog(D + 1) + 1) as usize;
-        // debug_assert_eq!(n0 + n1, v, "n0: {n0}, n1: {n1}, v: {v}");
 
         let checksum = ((D * n0) as u128) - result.iter().map(|v| *v as u128).sum::<u128>();
 
@@ -182,7 +193,6 @@ mod tests {
 
         use super::super::*;
 
-        use bitcoin::hashes::hash160::Hash as Hash160;
         use bitcoin::hashes::ripemd160::Hash as Ripemd160;
         use bitcoin::hashes::Hash;
 
@@ -198,11 +208,11 @@ mod tests {
             let n = message.len();
 
             let secret_key = SecretKey::from_seed::<_, SmallRng>([1u8; 32], n);
-            let public_key: PublicKey<N> = secret_key.public_key::<Ripemd160>();
+            let public_key: PublicKey<N> = secret_key.public_key::<Ripemd160, _>();
 
             let signature = secret_key.sign::<Ripemd160>(&message);
 
-            assert!(public_key.verify::<Ripemd160>(&message, &signature));
+            assert!(public_key.verify::<Ripemd160, _>(&message, &signature));
         }
 
         #[derive(Clone, Debug)]
@@ -222,18 +232,18 @@ mod tests {
 
         #[quickcheck]
         fn any_msg_with_any_seed_works(TestInput { seed, msg }: TestInput) -> bool {
-            const N: usize = Hash160::LEN;
+            const N: usize = Ripemd160::LEN;
 
             let message = Message::from_bytes(msg.as_bytes());
 
             let n = message.len();
 
             let secret_key = SecretKey::from_seed::<_, SmallRng>(seed, n);
-            let public_key: PublicKey<N> = secret_key.public_key::<Hash160>();
+            let public_key: PublicKey<N> = secret_key.public_key::<Ripemd160, _>();
 
-            let signature = secret_key.sign::<Hash160>(&message);
+            let signature = secret_key.sign::<Ripemd160>(&message);
 
-            public_key.verify::<Hash160>(&message, &signature)
+            public_key.verify::<Ripemd160, _>(&message, &signature)
         }
     }
 }
