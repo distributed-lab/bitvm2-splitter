@@ -1,3 +1,4 @@
+use crate::treepp;
 use bitcoin::{hashes::Hash, ScriptBuf, TapLeafHash, Transaction};
 use bitcoin_scriptexec::{Exec, ExecCtx, ExecError, ExecStats, Options, Stack, TxTemplate};
 use core::fmt;
@@ -124,6 +125,17 @@ pub fn execute_script_no_stack_limit(script: bitcoin::ScriptBuf) -> ExecuteInfo 
         alt_stack: exec.altstack().clone(),
         stats: exec.stats().clone(),
     }
+}
+
+/// Run the given script and panic if the script execution fails.
+#[allow(dead_code)]
+pub fn run_and_assert(script: treepp::Script) {
+    let exec_result = execute_script(script);
+    if !exec_result.success {
+        println!("Script execution failed!");
+    }
+
+    assert!(exec_result.success, "Script execution failed!");
 }
 
 #[cfg(test)]

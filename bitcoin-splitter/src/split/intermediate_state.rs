@@ -4,6 +4,9 @@
 use crate::{treepp::*, utils::stack_to_script};
 use bitcoin_scriptexec::Stack;
 
+/// Structure that represents the intermediate state.
+/// It contains the stack and altstack after the execution of the
+/// corresponding shard.
 pub struct IntermediateState {
     pub stack: Stack,
     pub altstack: Stack,
