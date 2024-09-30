@@ -115,12 +115,37 @@ pub struct Message(Vec<u8>);
 
 impl Message {
     pub fn from_bytes(msg: &[u8]) -> Self {
+        if msg.is_empty() {
+            return Self(Vec::new());
+        }
+
         let mut result = Vec::with_capacity(msg.len() * 8 / D);
         let bits = BitSlice::<_, Lsb0>::from_slice(msg);
 
+        let v = msg.len();
+        // the same as v/log_2(D+1) with rounding to positive infinity.
+        let n0 = v.div_ceil(BASE);
+
         // TODO: this is very unoptimized, so I would consider
         // reimplementing it in future.
-        for chunk in bits.chunks(BASE) {
+        for chunk in bits.chunks(BASE).take(n0) {
+            let mut bitbuf = 0u8;
+            for (idx, bit) in chunk.iter().enumerate() {
+                bitbuf |= (*bit.as_ref() as u8) << idx;
+            }
+            result.push(bitbuf);
+        }
+
+        let n1 = ((D * n0).ilog(D + 1) + 1) as usize;
+        // debug_assert_eq!(n0 + n1, v, "n0: {n0}, n1: {n1}, v: {v}");
+
+        let checksum = ((D * n0) as u128) - result.iter().map(|v| *v as u128).sum::<u128>();
+
+        let checksum_bytes = checksum.to_be_bytes();
+        let bits = BitSlice::<_, Lsb0>::from_slice(&checksum_bytes);
+        // TODO: this is very unoptimized, so I would consider
+        // reimplementing it in future.
+        for chunk in bits.chunks(BASE).take(n1) {
             let mut bitbuf = 0u8;
             for (idx, bit) in chunk.iter().enumerate() {
                 bitbuf |= (*bit.as_ref() as u8) << idx;
