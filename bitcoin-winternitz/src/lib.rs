@@ -250,6 +250,93 @@ impl Message {
 #[derive(Clone, Debug)]
 pub struct Signature<const N: usize>(Vec<[u8; N]>);
 
+pub fn checksig_verify_script<const N: usize>(
+    public_key: &ChunkedPublicKey<N>,
+    n: usize,
+    n0: usize,
+    n1: usize,
+) -> Script {
+    script! {
+        //
+        // Verify the hash chain for each digit
+        //
+
+        // Repeat this for every of the n many digits
+        for digit_index in 0..n {
+            // Verify that the digit is in the range [0, d]
+            // See https://github.com/BitVM/BitVM/issues/35
+            { D }
+            OP_MIN
+
+            // Push two copies of the digit onto the altstack
+            OP_DUP
+            OP_TOALTSTACK
+            OP_TOALTSTACK
+
+            // Hash the input hash d times and put every result on the stack
+            for _ in 0..D {
+                OP_DUP OP_HASH160
+            }
+
+            // Verify the signature for this digit
+            OP_FROMALTSTACK
+            OP_PICK
+            { public_key.0[n - 1 - digit_index].to_vec() }
+            OP_EQUALVERIFY
+
+            // Drop the d+1 stack items
+            for _ in 0..(D+1)/2 {
+                OP_2DROP
+            }
+        }
+
+        //
+        // Verify the Checksum
+        //
+
+        // 1. Compute the checksum of the message's digits
+        OP_FROMALTSTACK OP_DUP OP_NEGATE
+        for _ in 1..n0 {
+            OP_FROMALTSTACK OP_TUCK OP_SUB
+        }
+        { D * n0 }
+        OP_ADD
+
+
+        // 2. Sum up the signed checksum's digits
+        OP_FROMALTSTACK
+        for _ in 0..n1 - 1 {
+            for _ in 0..BASE {
+                OP_DUP OP_ADD
+            }
+            OP_FROMALTSTACK
+            OP_ADD
+        }
+
+        // 3. Ensure both checksums are equal
+        OP_EQUALVERIFY
+
+
+        // Convert the message's digits to bytes
+        for i in 0..n0 / 2 {
+            OP_SWAP
+            for _ in 0..BASE {
+                OP_DUP OP_ADD
+            }
+            OP_ADD
+            // Push all bytes to the altstack, except for the last byte
+            if i != (n0/2) - 1 {
+                OP_TOALTSTACK
+            }
+        }
+        // Read the bytes from the altstack
+        for _ in 0..n0 / 2 - 1{
+            OP_FROMALTSTACK
+        }
+
+    }
+}
+
 #[cfg(test)]
 mod tests {
 

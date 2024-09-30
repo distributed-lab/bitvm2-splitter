@@ -7,6 +7,7 @@ edition = "2021"
 bitcoin.workspace = true
 bitvec = { version = "1.0.1", default-features = false }
 rand = { version = "0.8.5", default-features = false, optional = true, features = ["min_const_gen"] }
+bitvm2-splitter.path = "../splitter"
 
 [features]
 default = ["rand"]
