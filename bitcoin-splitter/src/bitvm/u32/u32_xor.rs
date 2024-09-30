@@ -7,7 +7,7 @@ use crate::treepp::*;
 ///
 /// Expects the u8_xor_table on the stack
 ///
-/// Explanation of the algorithm: https://github.com/BitVM/BitVM/blob/main/tapscripts/docs/u8_xor.md
+/// Explanation of the algorithm: <https://github.com/BitVM/BitVM/blob/main/tapscripts/docs/u8_xor.md>
 pub fn u8_xor(i: u32) -> Script {
     script! {
         // f_A = f(A)

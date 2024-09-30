@@ -182,9 +182,10 @@ pub fn sha256_k() -> Vec<Script> {
     state.iter().map(|x: &u32| u32_push(*x)).collect::<Vec<_>>()
 }
 
-/// sha256 transform
-/// intput: [m[15], m[14], ..., m[0], state[7], state[6], ..., state[0]]
-/// output: [state[7], state[6], ..., state[0]]
+/// SHA256 transform
+/// 
+/// - **Input**: `[m[15], m[14], ..., m[0], state[7], state[6], ..., state[0]]`
+/// - **Output**: `[state[7], state[6], ..., state[0]]`
 pub fn sha256_transform(xor_depth: u32, k_depth: u32) -> Script {
     script! {
         // push old state to alt stack
@@ -976,11 +977,11 @@ mod tests {
         // Generate a random array of bytes
         let mut data = [0; BYTES_NUMBER];
         rand::thread_rng().fill_bytes(&mut data);
-        let data_hex = hex::encode(&data);
+        let data_hex = hex::encode(data);
 
         // Creating a SHA-256 hasher
         let mut hasher = Sha256::new();
-        hasher.update(&data);
+        hasher.update(data);
         let mut result = hasher.finalize();
 
         // Now, doing the same thing again, but for the current digest

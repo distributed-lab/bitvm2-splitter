@@ -165,7 +165,6 @@ mod test {
     use crate::bitvm::u32::u32_std::*;
     use crate::debug::run_and_assert;
     use crate::treepp::script;
-    use rand::Rng;
 
     #[test]
     fn test_u32_push() {
@@ -186,20 +185,13 @@ mod test {
 
     #[test]
     fn test_with_u32_compress() {
-        let mut rng = rand::thread_rng();
-
         for _ in 0..30 {
-            let mut origin_value0: u32 = rng.gen();
-            origin_value0 = (origin_value0 % 1) << 31;
-            let mut origin_value1: u32 = rng.gen();
-            origin_value1 = (origin_value1 % 1) << 31;
-
-            let v = origin_value0 + origin_value1;
+            let v = 0;
 
             let script = script! {
-                { u32_push(origin_value0)}
+                { u32_push(0)}
                 { u32_compress()}
-                { u32_push(origin_value1)}
+                { u32_push(0)}
                 { u32_compress()}
                 OP_ADD
                 { u32_push(v)}
