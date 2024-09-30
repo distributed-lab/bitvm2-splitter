@@ -22,6 +22,9 @@ pub struct SplitResult {
 
 /// Trait that any script that can be split should implement
 pub trait SplitableScript<const INPUT_SIZE: usize, const OUTPUT_SIZE: usize> {
+    const INPUT_SIZE: usize = INPUT_SIZE;
+    const OUTPUT_SIZE: usize = OUTPUT_SIZE;
+
     /// Returns the main logic (f) of the script
     fn script() -> Script;
 
