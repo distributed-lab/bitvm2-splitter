@@ -29,8 +29,8 @@ pub enum SplitType {
     ByBytes,
 }
 
-// TODO: Currently, the chunk size splits the script into the parts of the same size IN TERMS OF INSTRUCTIONS, not bytes.
-/// Splits the given script into smaller parts
+/// Splits the given script into smaller parts. Tries to keep each chunk size
+/// to the optimal size ([`OPTIMAL_SCRIPT_SIZE`]) as close as possible.
 pub(super) fn split_into_shards(
     script: &Script,
     chunk_size: usize,
@@ -89,6 +89,11 @@ pub(super) fn split_into_shards(
     shards
 }
 
+/// Naive split of the script into smaller parts. It works as follows:
+/// 1. We split the script into smaller parts
+/// 2. We execute each shard with the input
+/// 3. Save intermediate results
+/// 4. Return all the shards and intermediate results in the form of [`SplitResult`]
 pub(super) fn naive_split(input: Script, script: Script, split_type: SplitType) -> SplitResult {
     // First, we split the script into smaller parts
     let shards = split_into_shards(&script, OPTIMAL_SCRIPT_SIZE, split_type);
