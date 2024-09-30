@@ -1,67 +1,54 @@
 //! Module containing the logic of splitting the script into smaller parts
 
-use bitcoin::script::Instruction;
+use bitcoin::script::{Instruction, Instructions, PushBytes};
 
-use super::script::SplitResult;
-use crate::{split::intermediate_state::IntermediateState, treepp::*};
+use crate::treepp::*;
 
 /// Maximum size of the script in bytes
 pub(super) const MAX_SCRIPT_SIZE: usize = 30000;
 
-// TODO: Currently, the chunk size splits the script into the parts of the same size IN TERMS OF INSTRUCTIONS, not bytes.
-/// Splits the given script into smaller parts
-pub(super) fn split_into_shards(script: &Script, chunk_size: usize) -> Vec<Script> {
-    let instructions: Vec<Instruction> = script
-        .instructions()
-        .map(|instruction| instruction.expect("script is most likely corrupted"))
-        .collect();
-
-    instructions
-        .chunks(chunk_size)
-        .map(|chunk| {
-            let mut shard = Script::new();
-            for instruction in chunk {
-                shard.push_instruction(*instruction);
-            }
-
-            shard
-        })
-        .collect()
+pub struct SplitResult {
+    /// Scripts that constitute the input script
+    pub scripts: Vec<Script>, 
+    /// Scripts that contain intermediate results
+    pub intermediate_results: Vec<Script>,
 }
 
-pub(super) fn naive_split(input: Script, script: Script) -> SplitResult {
-    // First, we split the script into smaller parts
-    let shards = split_into_shards(&script, MAX_SCRIPT_SIZE);
-    let mut intermediate_states: Vec<IntermediateState> = vec![];
+/// Splits the given script into smaller parts
+fn split_into_chunks(instructions: Instructions) -> Vec<Script> {
+    let intructions: Vec<Instruction> = instructions
+        .into_iter()
+        .map(|x| x.expect("intructions are corrupted"))
+        .collect();
 
-    // Then, we do the following steps:
-    // 1. We execute the first script with the input
-    // 2. We take the stack and write it to the intermediate results
-    // 3. We execute the second script with the saved intermediate results
-    // 4. Take the stask, save to the intermediate results
-    // 5. Repeat until the last script
+    println!("Instructions: {:?}", intructions.len());
+    
+    intructions.chunks(MAX_SCRIPT_SIZE).map(|chunk| {
+        println!("Chunk: {:?}", chunk.len());
 
-    intermediate_states.push(IntermediateState::from_input_script(&input, &shards[0]));
+        let num_opcodes = chunk.iter().filter(|x| matches!(x, Instruction::Op(_))).count();
+        let num_pushes = chunk.iter().filter(|x| matches!(x, Instruction::PushBytes(_))).count();
 
-    for shard in shards.clone().into_iter().skip(1) {
-        // Executing a piece of the script with the current input.
-        // NOTE #1: unwrap is safe to use here since intermediate_states is of length 1.
-        // NOTE #2: we need to feed in both the stack and the altstack
+        println!("Opcodes: {}, Pushes: {}", num_opcodes, num_pushes);
 
-        intermediate_states.push(IntermediateState::from_intermediate_result(
-            intermediate_states.last().unwrap(),
-            &shard,
-        ));
-    }
+        script! {
+            for instruction in chunk {
+                if let Instruction::Op(op) = instruction {
+                    { op.to_u8() }
+                }
+                else if let Instruction::PushBytes(bytes) = instruction {
+                    { PushBytes::as_bytes(*bytes).to_vec() }
+                }
+            }
+        }
+    }).collect()
+}
 
-    assert_eq!(
-        intermediate_states.len(),
-        shards.len(),
-        "Intermediate results should be the same as the number of scripts"
-    );
-
+pub(super) fn naive_split(script: Script) -> SplitResult {
+    let scripts = split_into_chunks(script.instructions());
+    
     SplitResult {
-        shards,
-        intermediate_states,
+        scripts,
+        intermediate_results: vec![],
     }
 }
