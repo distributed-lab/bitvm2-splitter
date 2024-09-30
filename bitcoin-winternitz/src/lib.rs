@@ -2,6 +2,16 @@ use bitcoin::hashes::HashEngine;
 use bitvec::{order::Lsb0, slice::BitSlice};
 use std::vec::Vec;
 
+use bitvm2_splitter::treepp::*;
+
+/// Fixed value of $d$ specified in original doc.
+///
+/// This value is used to set [`BASE`] of digits the algorithm splits
+/// message by.
+pub const D: usize = 3;
+
+pub const BASE: usize = (D + 1).ilog2() as usize;
+
 /// Secret key is array of $N$ chunks by $D$ bits, where the whole number
 /// of bits is equal to $v$.
 #[derive(Clone, Debug)]
@@ -38,15 +48,33 @@ impl<const N: usize> SecretKey<N> {
         Hash: bitcoin::hashes::Hash<Bytes = [u8; N], Engine = Eng>,
         Eng: HashEngine<MidState = [u8; N]>,
     {
-        let hash_chunks = self.0.iter().map(|chunk| {
+        let hash_chunks = self.hashed_d_times_chunks::<Hash>();
+
+        PublicKey::from_hashes::<Hash, Eng>(hash_chunks)
+    }
+
+    /// Return chunked public key derived from secret one.
+    pub fn chunked_public_key<Hash, Eng>(&self) -> ChunkedPublicKey<N>
+    where
+        Hash: bitcoin::hashes::Hash<Bytes = [u8; N], Engine = Eng>,
+        Eng: HashEngine<MidState = [u8; N]>,
+    {
+        let hash_chunks = self.hashed_d_times_chunks::<Hash>().into_iter().collect();
+
+        ChunkedPublicKey::new(hash_chunks)
+    }
+
+    fn hashed_d_times_chunks<Hash>(&self) -> impl IntoIterator<Item = [u8; N]> + '_
+    where
+        Hash: bitcoin::hashes::Hash<Bytes = [u8; N]>,
+    {
+        self.0.iter().map(|chunk| {
             let mut chunk = *chunk;
             for _ in 0..D {
                 chunk = <Hash as bitcoin::hashes::Hash>::hash(chunk.as_slice()).to_byte_array();
             }
             chunk
-        });
-
-        PublicKey::from_hashes::<Hash, _>(hash_chunks)
+        })
     }
 
     /// Generate [`Signature`] from [`Message`].
@@ -71,15 +99,55 @@ impl<const N: usize> SecretKey<N> {
     }
 }
 
-/// Public key is hashed $D$ times each of the $N$ chunks of the
+/// Public key is a hashed $D$ times each of the $n$ parts of the
 /// [`SecretKey`].
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
+pub struct ChunkedPublicKey<const N: usize>(Vec<[u8; N]>);
+
+impl<const N: usize> ChunkedPublicKey<N> {
+    pub fn new(chunks: Vec<[u8; N]>) -> Self {
+        Self(chunks)
+    }
+
+    /// Construct [`PublicKey`] from [`ChunkedPublicKey`]
+    pub fn into_public_key<Hash, Eng>(self) -> PublicKey<N>
+    where
+        Hash: bitcoin::hashes::Hash<Bytes = [u8; N], Engine = Eng>,
+        Eng: HashEngine<MidState = [u8; N]>,
+    {
+        PublicKey::from_hashes::<Hash, Eng>(self.0)
+    }
+
+    /// Verify signature for given message.    
+    pub fn verify<Hash, Eng>(&self, msg: &Message, sig: &Signature<N>) -> bool
+    where
+        Hash: bitcoin::hashes::Hash<Bytes = [u8; N], Engine = Eng>,
+        Eng: HashEngine<MidState = [u8; N]>,
+    {
+        for ((offset, sig_chunk), pubkey_chunk) in msg.0.iter().zip(sig.0.iter()).zip(self.0.iter())
+        {
+            let mut sig_chunk = *sig_chunk;
+            for _ in 0..(D - *offset as usize) {
+                sig_chunk =
+                    <Hash as bitcoin::hashes::Hash>::hash(sig_chunk.as_slice()).to_byte_array();
+            }
+            if sig_chunk != *pubkey_chunk {
+                return false;
+            }
+        }
+
+        true
+    }
+}
+
+/// The hash of concatenated chunks of [`ChunkedPublicKey`]
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct PublicKey<const N: usize>([u8; N]);
 
 impl<const N: usize> PublicKey<N> {
     /// Construct [`PublicKey`] from iterator of hashes, by concatinating
     /// and hashing all sub-hashes.
-    pub fn from_hashes<Hash, Eng>(chunks: impl Iterator<Item = [u8; N]>) -> Self
+    pub fn from_hashes<Hash, Eng>(chunks: impl IntoIterator<Item = [u8; N]>) -> Self
     where
         Hash: bitcoin::hashes::Hash<Bytes = [u8; N], Engine = Eng>,
         Eng: HashEngine<MidState = [u8; N]>,
@@ -112,14 +180,6 @@ impl<const N: usize> PublicKey<N> {
         *self == (Self::from_hashes::<Hash, Eng>(pubkey_chunks))
     }
 }
-
-/// Fixed value of $d$ specified in original doc.
-///
-/// This value is used to set [`BASE`] of digits the algorithm splits
-/// message by.
-pub const D: usize = 3;
-
-pub const BASE: usize = (D + 1).ilog2() as usize;
 
 /// Representation of $I_d^n$ - the vector of length $n$ with bit
 /// arrays of length $d$.
@@ -206,7 +266,7 @@ mod tests {
         use rand::rngs::SmallRng;
 
         #[test]
-        fn test_with_rand_public_key_with_ripemd_160() {
+        fn test_public_key_with_ripemd_160() {
             const N: usize = Ripemd160::LEN;
             const MESSAGE: &[u8] = b"Hello, world!";
 
@@ -238,7 +298,7 @@ mod tests {
         }
 
         #[quickcheck]
-        fn any_msg_with_any_seed_works(TestInput { seed, msg }: TestInput) -> bool {
+        fn test_any_msg_with_any_seed_works(TestInput { seed, msg }: TestInput) -> bool {
             const N: usize = Ripemd160::LEN;
 
             let message = Message::from_bytes(msg.as_bytes());
@@ -247,6 +307,22 @@ mod tests {
 
             let secret_key = SecretKey::from_seed::<_, SmallRng>(seed, n);
             let public_key: PublicKey<N> = secret_key.public_key::<Ripemd160, _>();
+
+            let signature = secret_key.sign::<Ripemd160>(&message);
+
+            public_key.verify::<Ripemd160, _>(&message, &signature)
+        }
+
+        #[quickcheck]
+        fn test_chunked_any_msg_with_any_seed_works(TestInput { seed, msg }: TestInput) -> bool {
+            const N: usize = Ripemd160::LEN;
+
+            let message = Message::from_bytes(msg.as_bytes());
+
+            let n = message.len();
+
+            let secret_key = SecretKey::from_seed::<_, SmallRng>(seed, n);
+            let public_key: ChunkedPublicKey<N> = secret_key.chunked_public_key::<Ripemd160, _>();
 
             let signature = secret_key.sign::<Ripemd160>(&message);
 
