@@ -5,7 +5,7 @@ edition = "2021"
 
 [dependencies]
 # Bitcoin Libraries
-bitcoin              = { git = "https://github.com/rust-bitcoin/rust-bitcoin", branch = "bitvm", features = ["rand-std"]}
+bitcoin              = { workspace = true, features = ["rand-std"]}
 bitcoin-script       = { git = "https://github.com/BitVM/rust-bitcoin-script" }
 bitcoin-scriptexec   = { git = "https://github.com/BitVM/rust-bitcoin-scriptexec/"}
 bitcoin-script-stack = { git = "https://github.com/FairgateLabs/rust-bitcoin-script-stack"}
