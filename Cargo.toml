@@ -1,6 +1,9 @@
 [workspace]
-members = ["splitter"]
+members = ["core", "splitter"]
 resolver = "2"
+
+[workspace.dependencies]
+bitcoin = { git = "https://github.com/rust-bitcoin/rust-bitcoin", branch = "bitvm" }
 
 [profile.dev]
 opt-level = 3
