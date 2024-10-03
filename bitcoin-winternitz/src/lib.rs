@@ -85,7 +85,7 @@ impl<const N: usize> SecretKey<N> {
         let hashes = self
             .0
             .iter()
-            .zip(msg.0.iter())
+            .zip(msg.parts.iter())
             .map(|(chunk, hash_times)| {
                 let mut chunk = *chunk;
                 for _ in 0..*hash_times {
@@ -124,7 +124,8 @@ impl<const N: usize> ChunkedPublicKey<N> {
         Hash: bitcoin::hashes::Hash<Bytes = [u8; N], Engine = Eng>,
         Eng: HashEngine<MidState = [u8; N]>,
     {
-        for ((offset, sig_chunk), pubkey_chunk) in msg.0.iter().zip(sig.0.iter()).zip(self.0.iter())
+        for ((offset, sig_chunk), pubkey_chunk) in
+            msg.parts.iter().zip(sig.0.iter()).zip(self.0.iter())
         {
             let mut sig_chunk = *sig_chunk;
             for _ in 0..(D - *offset as usize) {
@@ -168,14 +169,18 @@ impl<const N: usize> PublicKey<N> {
         Eng: HashEngine<MidState = [u8; N]>,
     {
         // or $\hat{y}$
-        let pubkey_chunks = msg.0.iter().zip(sig.0.iter()).map(|(offset, sig_chunk)| {
-            let mut sig_chunk = *sig_chunk;
-            for _ in 0..(D - *offset as usize) {
-                sig_chunk =
-                    <Hash as bitcoin::hashes::Hash>::hash(sig_chunk.as_slice()).to_byte_array();
-            }
-            sig_chunk
-        });
+        let pubkey_chunks = msg
+            .parts
+            .iter()
+            .zip(sig.0.iter())
+            .map(|(offset, sig_chunk)| {
+                let mut sig_chunk = *sig_chunk;
+                for _ in 0..(D - *offset as usize) {
+                    sig_chunk =
+                        <Hash as bitcoin::hashes::Hash>::hash(sig_chunk.as_slice()).to_byte_array();
+                }
+                sig_chunk
+            });
 
         *self == (Self::from_hashes::<Hash, Eng>(pubkey_chunks))
     }
@@ -188,8 +193,12 @@ impl<const N: usize> PublicKey<N> {
 ///
 /// Inner representation for now is `Vec<u8>`, which means, that each
 /// "digit" is 8 bits max.
-#[derive(Clone, Debug)]
-pub struct Message(Vec<u8>);
+#[derive(Clone, Debug, Default)]
+pub struct Message {
+    parts: Vec<u8>,
+    n0: usize,
+    n1: usize,
+}
 
 impl Message {
     /// Construct the $I_d^n$ repsentation of `msg`.
@@ -198,10 +207,10 @@ impl Message {
     /// `n1` `d+1`-base digits.
     pub fn from_bytes(msg: &[u8]) -> Self {
         if msg.is_empty() {
-            return Self(Vec::new());
+            return Self::default();
         }
 
-        let mut result = Vec::with_capacity(msg.len() * 8 / D);
+        let mut parts = Vec::with_capacity(msg.len() * 8 / D);
         let bits = BitSlice::<_, Lsb0>::from_slice(msg);
 
         let v = msg.len();
@@ -215,12 +224,12 @@ impl Message {
             for (idx, bit) in chunk.iter().enumerate() {
                 bitbuf |= (*bit.as_ref() as u8) << idx;
             }
-            result.push(bitbuf);
+            parts.push(bitbuf);
         }
 
         let n1 = ((D * n0).ilog(D + 1) + 1) as usize;
 
-        let checksum = ((D * n0) as u128) - result.iter().map(|v| *v as u128).sum::<u128>();
+        let checksum = ((D * n0) as u128) - parts.iter().map(|v| *v as u128).sum::<u128>();
 
         let checksum_bytes = checksum.to_be_bytes();
         let bits = BitSlice::<_, Lsb0>::from_slice(&checksum_bytes);
@@ -231,14 +240,24 @@ impl Message {
             for (idx, bit) in chunk.iter().enumerate() {
                 bitbuf |= (*bit.as_ref() as u8) << idx;
             }
-            result.push(bitbuf);
+            parts.push(bitbuf);
         }
 
-        Self(result)
+        Self { parts, n0, n1 }
+    }
+
+    #[inline]
+    pub const fn n0(&self) -> usize {
+        self.n0
+    }
+
+    #[inline]
+    pub const fn n1(&self) -> usize {
+        self.n1
     }
 
     pub fn len(&self) -> usize {
-        self.0.len()
+        self.parts.len()
     }
 
     pub fn is_empty(&self) -> bool {
@@ -252,10 +271,10 @@ pub struct Signature<const N: usize>(Vec<[u8; N]>);
 
 pub fn checksig_verify_script<const N: usize>(
     public_key: &ChunkedPublicKey<N>,
-    n: usize,
     n0: usize,
     n1: usize,
 ) -> Script {
+    let n = n0 + n1;
     script! {
         //
         // Verify the hash chain for each digit
@@ -275,7 +294,7 @@ pub fn checksig_verify_script<const N: usize>(
 
             // Hash the input hash d times and put every result on the stack
             for _ in 0..D {
-                OP_DUP OP_HASH160
+                OP_DUP OP_RIPEMD160
             }
 
             // Verify the signature for this digit
