@@ -1,5 +1,5 @@
 [workspace]
-members = ["splitter", "integration-tests"]
+members = ["bitcoin-splitter", "integration-tests"]
 resolver = "2"
 
 [workspace.dependencies]
