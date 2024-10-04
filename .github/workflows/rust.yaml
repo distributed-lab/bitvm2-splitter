@@ -75,8 +75,10 @@ jobs:
         with:
           tool: cargo-nextest
       - uses: Swatinem/rust-cache@v2
+      - run: docker compose up -d
       - name: test full
         run: |
           set -euxo pipefail
           cargo nextest run
           cargo test --doc
+      - run: docker compose down
