@@ -1,0 +1,39 @@
+[workspace]
+members = ["bitcoin-splitter", "integration-tests"]
+resolver = "2"
+
+[workspace.dependencies]
+bitcoin = { git = "https://github.com/rust-bitcoin/rust-bitcoin", branch = "bitvm" }
+tracing = "0.1.40"
+tracing-subscriber = "0.3.18"
+
+
+[profile.dev]
+opt-level = 3
+
+[profile.release]
+lto = true
+
+[patch.crates-io.base58check]
+git = "https://github.com/rust-bitcoin/rust-bitcoin"
+branch = "bitvm"
+
+[patch.crates-io.bitcoin]
+git = "https://github.com/rust-bitcoin/rust-bitcoin"
+branch = "bitvm"
+
+[patch.crates-io.bitcoin_hashes]
+git = "https://github.com/rust-bitcoin/rust-bitcoin"
+branch = "bitvm"
+
+[patch.crates-io.bitcoin-internals]
+git = "https://github.com/rust-bitcoin/rust-bitcoin"
+branch = "bitvm"
+
+[patch.crates-io.bitcoin-io]
+git = "https://github.com/rust-bitcoin/rust-bitcoin"
+branch = "bitvm"
+
+[patch.crates-io.bitcoin-units]
+git = "https://github.com/rust-bitcoin/rust-bitcoin"
+branch = "bitvm"
