@@ -10,7 +10,7 @@ The project contains multiple crates:
 | --- | --- |
 | [splitter](splitter/README.md) | A crate for splitting the Bitcoin script into multiple parts as suggested by the recent [_BitVM2 paper_](https://bitvm.org/bitvm_bridge.pdf). |
 
-## Setting up local Bitcoin node
+## Setting up a Local Bitcoin Node
 
 ```shell
 docker compose up -d
@@ -19,7 +19,7 @@ docker compose up -d
 > [!WARNING]
 > Sometimes Docker Compose may fail at step of creating the volumes, the most simple solution is, in regards of failure, just trying starting it again several times until it works.
 
-Let's create a temporary alias for `bitcoin-cli` from the container like this:
+Let us create a temporary alias for `bitcoin-cli` from the container like this:
 
 ```shell
 alias bitcoin-cli="docker compose exec bitcoind bitcoin-cli"
@@ -31,10 +31,14 @@ Create a fresh wallet for your user:
 bitcoin-cli createwallet "my"
 ```
 
+> [!WARNING]
+> Do not create more than one wallet, otherwise further steps would require
+> a bit of modification.
+
 Generate fresh address and store it to environmental variable:
 
 ```shell
-export ADDRESS='$(bitcoin-cli getnewaddress "main" "bech32")'
+export ADDRESS=$(bitcoin-cli getnewaddress "main" "bech32")
 ```
 
 Then mine 101 blocks to your address:
