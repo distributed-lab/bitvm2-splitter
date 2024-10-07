@@ -27,6 +27,17 @@ impl fmt::Display for ExecuteInfo {
         }
 
         writeln!(f, "Stats: {:?}", self.stats)?;
+
+        writeln!(f, "Stack:")?;
+        for element in self.main_stack.iter_str() {
+            writeln!(f, "> {}", hex::encode(element))?;
+        }
+
+        writeln!(f, "\nAltStack:")?;
+        for element in self.alt_stack.iter_str() {
+            writeln!(f, "> {}", hex::encode(element))?;
+        }
+
         Ok(())
     }
 }

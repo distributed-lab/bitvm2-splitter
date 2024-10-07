@@ -1,16 +1,25 @@
 use bitcoin::hashes::HashEngine;
-use bitvec::{order::Lsb0, slice::BitSlice};
+use bitvec::{order::Lsb0, slice::BitSlice, vec::BitVec};
 use std::vec::Vec;
 
-use bitvm2_splitter::treepp::*;
+use bitcoin_splitter::treepp::*;
+
+pub mod u32;
 
 /// Fixed value of $d$ specified in original doc.
 ///
 /// This value is used to set [`BASE`] of digits the algorithm splits
 /// message by.
-pub const D: usize = 3;
+pub const D: usize = 15;
 
-pub const BASE: usize = (D + 1).ilog2() as usize;
+pub const BITS_PER_DIGIT: usize = (D + 1).ilog2() as usize;
+
+/// Check that BITS_PER_DIGIT is not bigger than 8 bits
+const _: () = {
+    if BITS_PER_DIGIT > 8 {
+        panic!("Current implement of message partition requires to have at max 8 bits per digit");
+    }
+};
 
 /// Secret key is array of $N$ chunks by $D$ bits, where the whole number
 /// of bits is equal to $v$.
@@ -96,6 +105,27 @@ impl<const N: usize> SecretKey<N> {
             .collect::<Vec<_>>();
 
         Signature(hashes)
+    }
+
+    /// Generate [`Signature`] from [`Message`].
+    pub fn sign_extended<Hash>(&self, msg: &Message) -> ExtendedSignature<N>
+    where
+        Hash: bitcoin::hashes::Hash<Bytes = [u8; N]>,
+    {
+        let hashes = self
+            .0
+            .iter()
+            .zip(msg.parts.iter())
+            .map(|(chunk, hash_times)| {
+                let mut chunk = *chunk;
+                for _ in 0..*hash_times {
+                    chunk = <Hash as bitcoin::hashes::Hash>::hash(chunk.as_slice()).to_byte_array();
+                }
+                (*hash_times, chunk)
+            })
+            .collect::<Vec<_>>();
+
+        ExtendedSignature(hashes)
     }
 }
 
@@ -213,13 +243,13 @@ impl Message {
         let mut parts = Vec::with_capacity(msg.len() * 8 / D);
         let bits = BitSlice::<_, Lsb0>::from_slice(msg);
 
-        let v = msg.len();
+        let v = msg.len() * 8;
         // the same as v/log_2(D+1) with rounding to positive infinity.
-        let n0 = v.div_ceil(BASE);
+        let n0 = v.div_ceil(BITS_PER_DIGIT);
 
         // TODO: this is very unoptimized, so I would consider
         // reimplementing it in future.
-        for chunk in bits.chunks(BASE).take(n0) {
+        for chunk in bits.chunks(BITS_PER_DIGIT).take(n0) {
             let mut bitbuf = 0u8;
             for (idx, bit) in chunk.iter().enumerate() {
                 bitbuf |= (*bit.as_ref() as u8) << idx;
@@ -231,11 +261,11 @@ impl Message {
 
         let checksum = ((D * n0) as u128) - parts.iter().map(|v| *v as u128).sum::<u128>();
 
-        let checksum_bytes = checksum.to_be_bytes();
+        let checksum_bytes = checksum.to_le_bytes();
         let bits = BitSlice::<_, Lsb0>::from_slice(&checksum_bytes);
         // TODO: this is very unoptimized, so I would consider
         // reimplementing it in future.
-        for chunk in bits.chunks(BASE).take(n1) {
+        for chunk in bits.chunks(BITS_PER_DIGIT).take(n1) {
             let mut bitbuf = 0u8;
             for (idx, bit) in chunk.iter().enumerate() {
                 bitbuf |= (*bit.as_ref() as u8) << idx;
@@ -244,6 +274,20 @@ impl Message {
         }
 
         Self { parts, n0, n1 }
+    }
+
+    pub fn recover_message(&self) -> Vec<u8> {
+        let mut bitvec = BitVec::<_, Lsb0>::with_capacity(self.n0 * BITS_PER_DIGIT);
+
+        for part in self.parts.iter().take(self.n0) {
+            let part_bytes = part.to_le_bytes();
+            let part_bits = BitSlice::<u8, Lsb0>::from_slice(&part_bytes);
+
+            // We only need first `BITS_PER_DIGIT` bits of representation.
+            bitvec.extend_from_bitslice(&part_bits[..BITS_PER_DIGIT]);
+        }
+
+        bitvec.into_vec()
     }
 
     #[inline]
@@ -268,6 +312,64 @@ impl Message {
 /// Winternitz signature. The array of intermidiate hashes of secret key.
 #[derive(Clone, Debug)]
 pub struct Signature<const N: usize>(Vec<[u8; N]>);
+
+impl<const N: usize> Signature<N> {
+    pub fn len(&self) -> usize {
+        self.0.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
+}
+
+/// Winternitz signature. The array of pair of the number of hashes $s_i$,
+/// and hashed $s_i$ times secret key.
+#[derive(Clone, Debug)]
+pub struct ExtendedSignature<const N: usize>(Vec<(u8, [u8; N])>);
+
+impl<const N: usize> ExtendedSignature<N> {
+    /// Returns [`ExtendedSignature`] from message and signature.
+    pub fn from_msg_and_sig(msg: &Message, sig: &Signature<N>) -> Option<Self> {
+        if msg.len() != sig.len() {
+            return None;
+        }
+
+        Some(Self(
+            msg.parts
+                .iter()
+                .copied()
+                .zip(sig.0.iter().copied())
+                .collect(),
+        ))
+    }
+
+    /// Creates bitcoin script with pushed to stack pairs of signature and and
+    /// number of times it was hashed.
+    pub fn to_script_sig(&self) -> Script {
+        script! {
+            for (times, sig) in &self.0 {
+                { sig.to_vec() }
+                { *times }
+            }
+        }
+    }
+
+    /// Convert signature back to message for recovery.
+    pub fn msg_recover(&self, n0: usize, n1: usize) -> Message {
+        Message {
+            parts: self.0.iter().map(|(times, _)| *times).collect(),
+            n0,
+            n1,
+        }
+    }
+}
+
+impl<const N: usize> From<ExtendedSignature<N>> for Signature<N> {
+    fn from(value: ExtendedSignature<N>) -> Self {
+        Self(value.0.iter().map(|(_, part)| *part).collect())
+    }
+}
 
 pub fn checksig_verify_script<const N: usize>(
     public_key: &ChunkedPublicKey<N>,
@@ -325,7 +427,7 @@ pub fn checksig_verify_script<const N: usize>(
         // 2. Sum up the signed checksum's digits
         OP_FROMALTSTACK
         for _ in 0..n1 - 1 {
-            for _ in 0..BASE {
+            for _ in 0..BITS_PER_DIGIT {
                 OP_DUP OP_ADD
             }
             OP_FROMALTSTACK
@@ -339,7 +441,7 @@ pub fn checksig_verify_script<const N: usize>(
         // Convert the message's digits to bytes
         for i in 0..n0 / 2 {
             OP_SWAP
-            for _ in 0..BASE {
+            for _ in 0..BITS_PER_DIGIT {
                 OP_DUP OP_ADD
             }
             OP_ADD
@@ -352,7 +454,6 @@ pub fn checksig_verify_script<const N: usize>(
         for _ in 0..n0 / 2 - 1{
             OP_FROMALTSTACK
         }
-
     }
 }
 
@@ -367,13 +468,11 @@ mod tests {
         use super::super::*;
 
         use bitcoin::hashes::ripemd160::Hash as Ripemd160;
-        use bitcoin::hashes::Hash;
 
         use rand::rngs::SmallRng;
 
         #[test]
         fn test_public_key_with_ripemd_160() {
-            const N: usize = Ripemd160::LEN;
             const MESSAGE: &[u8] = b"Hello, world!";
 
             let message = Message::from_bytes(MESSAGE);
@@ -381,11 +480,78 @@ mod tests {
             let n = message.len();
 
             let secret_key = SecretKey::from_seed::<_, SmallRng>([1u8; 32], n);
-            let public_key: PublicKey<N> = secret_key.public_key::<Ripemd160, _>();
+            let public_key = secret_key.public_key::<Ripemd160, _>();
 
             let signature = secret_key.sign::<Ripemd160>(&message);
 
             assert!(public_key.verify::<Ripemd160, _>(&message, &signature));
+        }
+
+        #[test]
+        fn test_check_bitvm_example_script_works() {
+            const MESSAGE: [u8; 40] = [
+                1, 2, 3, 4, 5, 6, 7, 8, 9, 0xA, 0xB, 0xC, 0xD, 0xE, 0xF, 7, 7, 7, 7, 7, 1, 2, 3, 4,
+                5, 6, 7, 8, 9, 0xA, 0xB, 0xC, 0xD, 0xE, 0xF, 7, 7, 7, 7, 7,
+            ];
+
+            let message = Message::from_bytes(&MESSAGE);
+
+            let n = message.len();
+
+            let secret_key = SecretKey::from_seed::<_, SmallRng>([1u8; 32], n);
+            let public_key = secret_key.chunked_public_key::<Ripemd160, _>();
+
+            let signature = secret_key.sign_extended::<Ripemd160>(&message);
+
+            let script = script! {
+                { signature.to_script_sig() }
+                { checksig_verify_script(&public_key, message.n0(), message.n1()) }
+            };
+
+            let result = execute_script(script);
+
+            println!("{}", result);
+
+            assert!(result.success);
+        }
+
+        #[test]
+        fn test_check_u32_signign_works() {
+            const MESSAGE: u32 = 123123123;
+
+            let message = Message::from_bytes(&MESSAGE.to_le_bytes());
+
+            let n = message.len();
+
+            let secret_key = SecretKey::from_seed::<_, SmallRng>([1u8; 32], n);
+            let public_key = secret_key.chunked_public_key::<Ripemd160, _>();
+
+            let signature = secret_key.sign_extended::<Ripemd160>(&message);
+
+            let script = script! {
+                { signature.to_script_sig() }
+                { checksig_verify_script(&public_key, message.n0(), message.n1()) }
+            };
+
+            let result = execute_script(script);
+
+            println!("{}", result);
+
+            assert!(result.success);
+        }
+
+        #[test]
+        fn test_message_recovery_is_the_same_as_msg() {
+            const MESSAGE: &[u8] = b"Hello, world!";
+
+            let msg = Message::from_bytes(MESSAGE);
+
+            assert_eq!(
+                MESSAGE,
+                msg.recover_message(),
+                "message partition = {:?}",
+                msg
+            );
         }
 
         #[derive(Clone, Debug)]
@@ -405,14 +571,12 @@ mod tests {
 
         #[quickcheck]
         fn test_any_msg_with_any_seed_works(TestInput { seed, msg }: TestInput) -> bool {
-            const N: usize = Ripemd160::LEN;
-
             let message = Message::from_bytes(msg.as_bytes());
 
             let n = message.len();
 
             let secret_key = SecretKey::from_seed::<_, SmallRng>(seed, n);
-            let public_key: PublicKey<N> = secret_key.public_key::<Ripemd160, _>();
+            let public_key = secret_key.public_key::<Ripemd160, _>();
 
             let signature = secret_key.sign::<Ripemd160>(&message);
 
@@ -421,14 +585,12 @@ mod tests {
 
         #[quickcheck]
         fn test_chunked_any_msg_with_any_seed_works(TestInput { seed, msg }: TestInput) -> bool {
-            const N: usize = Ripemd160::LEN;
-
             let message = Message::from_bytes(msg.as_bytes());
 
             let n = message.len();
 
             let secret_key = SecretKey::from_seed::<_, SmallRng>(seed, n);
-            let public_key: ChunkedPublicKey<N> = secret_key.chunked_public_key::<Ripemd160, _>();
+            let public_key = secret_key.chunked_public_key::<Ripemd160, _>();
 
             let signature = secret_key.sign::<Ripemd160>(&message);
 
