@@ -215,6 +215,8 @@ impl Signature {
     }
 }
 
+/// Returns the script which verifies the Winternitz signature (see
+/// [`Signature`]) from top of the stack.
 pub fn checksig_verify_script(public_key: &PublicKey) -> Script {
     script! {
         //
