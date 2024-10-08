@@ -7,8 +7,8 @@ use bitcoin::hashes::Hash;
 
 /// Fixed value of $d$ specified in original doc.
 ///
-/// This value is used to set [`BASE`] of digits the algorithm splits
-/// message by.
+/// This value is used to set [`BITS_PER_DIGIT`] of digits the algorithm
+/// splits message by.
 pub const D: usize = 15;
 
 pub const BITS_PER_DIGIT: usize = (D + 1).ilog2() as usize;
