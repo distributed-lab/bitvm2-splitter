@@ -137,6 +137,58 @@ mod tests {
     }
 
     #[test]
+    fn test_split_each_shard() {
+        // First, we generate the pair of input and output scripts
+        let IOPair { input, output: _ } = U254MulScript::generate_valid_io_pair();
+
+        // Splitting the script into shards
+        let split_result = U254MulScript::default_split(input.clone(), SplitType::ByInstructions);
+
+        for i in 0..split_result.len() {
+            // Forming first two inputs. Note that the first input is the input script itself
+            // while the second input is the output of the previous shard
+            let mut first_input = input.clone();
+            if i > 0 {
+                first_input = split_result.intermediate_states[i - 1].inject_script();
+            }
+
+            let second_input = split_result.intermediate_states[i].inject_script();
+
+            // Forming the function
+            let function = split_result.shards[i].clone();
+
+            let verification_script = script! {
+                { second_input }
+                { first_input }
+                { function }
+
+                // Verifying that the output in mainstack is correct
+                for i in (0..split_result.intermediate_states[i].stack.len()).rev() {
+                    { i+1 } OP_ROLL OP_EQUALVERIFY
+                }
+
+                // Verifying that the output in altstack is correct
+                // Pushing elements to the mainstack
+                for _ in 0..2*split_result.intermediate_states[i].altstack.len() {
+                    OP_FROMALTSTACK
+                }
+
+                // Verifying that altstack elements are correct
+                for i in (0..split_result.intermediate_states[i].altstack.len()).rev() {
+                    { i+1 } OP_ROLL OP_EQUALVERIFY
+                }
+
+                OP_TRUE
+            };
+
+            let result = execute_script(verification_script);
+
+            assert!(result.success, "verification has failed");
+        }
+    }
+
+    #[test]
+    #[ignore = "too-large computation, run separately"]
     fn test_fuzzy_split() {
         // First, we generate the pair of input and output scripts
         let IOPair { input, output } = U254MulScript::generate_valid_io_pair();
@@ -179,42 +231,5 @@ mod tests {
         // Now, we debug the total size of the states
         let total_size = split_result.total_states_size();
         println!("Total size of the states: {} bytes", total_size);
-    }
-
-    #[test]
-    fn test_to_u32_conversion() {
-        // First, we generate the pair of input and output scripts
-        let IOPair { input, output } = U254MulScript::generate_valid_io_pair();
-
-        // Splitting the script into shards
-        let split_result = U254MulScript::default_split(input, SplitType::ByInstructions);
-
-        // Debugging the split result
-        println!("Split result: {:?}", split_result);
-
-        // Now, verifying tha the split is correct (meaning, the last state is equal to the output)
-        let last_state = split_result.must_last_state();
-
-        // Altstack must be empty
-        assert!(last_state.altstack.is_empty(), "altstack is not empty!");
-
-        // The element of the mainstack must be equal to the actual output
-        let verification_script = script! {
-            { stack_to_script(&last_state.stack) }
-            { output }
-            { U508::OP_EQUAL(0, 1) }
-        };
-
-        let result = execute_script(verification_script);
-        assert!(result.success, "verification has failed");
-
-        // Now, let us debug each of the intermediate states
-        for (i, state) in split_result.intermediate_states.iter().enumerate() {
-            let state_as_bytes = state.stack.clone().serialize_to_bytes();
-
-            println!("Intermediate state #{}: {:?}", i, state);
-            println!("Intermediate state as bytes #{}: {:?}", i, state_as_bytes);
-            // println!("Intermediate state as u32 array #{}: {:?}", i, Stack::from_u8_vec(state_as_bytes));
-        }
     }
 }

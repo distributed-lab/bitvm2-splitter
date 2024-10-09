@@ -107,7 +107,9 @@ impl SplitResult {
                 let current_state_size = self.intermediate_states[i].size();
                 let previous_state_size = if i > 0 {
                     self.intermediate_states[i - 1].size()
-                } else { 0 };
+                } else {
+                    0
+                };
 
                 shard_size + (current_state_size + previous_state_size) * STACK_SIZE_INDEX
             });

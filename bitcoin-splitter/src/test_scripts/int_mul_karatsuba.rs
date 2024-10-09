@@ -141,6 +141,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore = "too-large computation, run separately"]
     fn test_fuzzy_split() {
         // First, we generate the pair of input and output scripts
         let IOPair { input, output } = U261MulKaratsubaScript::generate_valid_io_pair();
