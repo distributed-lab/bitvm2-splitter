@@ -128,14 +128,12 @@ pub(super) fn fuzzy_split(input: Script, script: Script, split_type: SplitType) 
     for chunk_size in (MIN_CHUNK_SIZE..MAX_CHUNK_SIZE).step_by(STEP_SIZE) {
         // Incrementing the progress bar
         bar.inc(1);
-
         // We are using panic::catch_unwind to catch any panics that might occur
         // during the splitting process. If a panic occurs, we just skip the current
         // chunk size and continue with the next one.
         let current_split_result = panic::catch_unwind(|| {
             naive_split(input.clone(), script.clone(), split_type, chunk_size)
         });
-
         if let Ok(split_result) = current_split_result {
             let current_complexity = split_result.complexity_index();
 

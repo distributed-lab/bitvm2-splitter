@@ -85,6 +85,11 @@ impl IntermediateState {
     pub fn size(&self) -> usize {
         self.stack.len() + self.altstack.len()
     }
+
+    /// Converts the stack to a vector of u32 values
+    pub fn interpret_as_u32_array(&self) -> Vec<u8> {
+        self.stack.clone().serialize_to_bytes()
+    }
 }
 
 impl IntermediateStateAsBytes {
