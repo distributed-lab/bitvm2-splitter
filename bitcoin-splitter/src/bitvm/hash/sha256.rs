@@ -183,7 +183,7 @@ pub fn sha256_k() -> Vec<Script> {
 }
 
 /// SHA256 transform
-/// 
+///
 /// - **Input**: `[m[15], m[14], ..., m[0], state[7], state[6], ..., state[0]]`
 /// - **Output**: `[state[7], state[6], ..., state[0]]`
 pub fn sha256_transform(xor_depth: u32, k_depth: u32) -> Script {
