@@ -55,7 +55,7 @@ mod tests {
     #[test]
     fn test_sha256_verify() {
         const TEST_BYTES_NUM: usize = 80;
-        assert!(SHA256Script::<TEST_BYTES_NUM>::verify_random());
+        assert!(SHA256Script::<TEST_BYTES_NUM>::verify_random(), "Random verification failed");
     }
 
     #[test]

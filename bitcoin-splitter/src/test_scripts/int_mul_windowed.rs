@@ -188,6 +188,63 @@ mod tests {
     }
 
     #[test]
+    fn test_split_to_u32() {
+        // First, we generate the pair of input and output scripts
+        let IOPair { input, output: _ } = U254MulScript::generate_valid_io_pair();
+
+        // Splitting the script into shards
+        let split_result = U254MulScript::default_split(input.clone(), SplitType::ByInstructions);
+
+        for i in 0..split_result.len() {
+            // Forming first two inputs. Note that the first input is the input script itself
+            // while the second input is the output of the previous shard
+            let mut first_input = input.clone();
+            if i > 0 {
+                first_input = split_result.intermediate_states[i - 1].to_bytes().inject_script();
+            }
+
+            let second_input = split_result.intermediate_states[i].to_bytes().inject_script();
+
+            println!("Expected: {:?}", split_result.intermediate_states[i].inject_script().len());
+            println!("Actual: {:?}", second_input.to_asm_string().len());
+
+            println!("Expected: {:?}", split_result.intermediate_states[i].inject_script());
+            println!("Actual: {:?}", second_input.to_asm_string());
+
+            // Forming the function
+            let function = split_result.shards[i].clone();
+
+            let verification_script = script! {
+                { second_input }
+                { first_input }
+                { function }
+
+                // Verifying that the output in mainstack is correct
+                for i in (0..split_result.intermediate_states[i].stack.len()).rev() {
+                    { i+1 } OP_ROLL OP_EQUALVERIFY
+                }
+
+                // Verifying that the output in altstack is correct
+                // Pushing elements to the mainstack
+                for _ in 0..2*split_result.intermediate_states[i].altstack.len() {
+                    OP_FROMALTSTACK
+                }
+
+                // Verifying that altstack elements are correct
+                for i in (0..split_result.intermediate_states[i].altstack.len()).rev() {
+                    { i+1 } OP_ROLL OP_EQUALVERIFY
+                }
+
+                OP_TRUE
+            };
+
+            let result = execute_script(verification_script);
+
+            assert!(result.success, "verification has failed");
+        }
+    }
+
+    #[test]
     #[ignore = "too-large computation, run separately"]
     fn test_fuzzy_split() {
         // First, we generate the pair of input and output scripts

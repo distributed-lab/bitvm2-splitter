@@ -97,6 +97,25 @@ impl IntermediateStateAsBytes {
     pub fn altstack_as_u32(&self) -> Vec<u32> {
         bytes_to_u32_array(&self.altstack)
     }
+
+    /// Injects the stack and altstack into the script
+    pub fn inject_script(&self) -> Script {
+        script! {
+            // Inject the stack
+            for stack_element in self.stack_as_u32() {
+                { stack_element }
+            }
+
+            // Inject the altstack
+            for altstack_element in self.altstack_as_u32() {
+                { altstack_element }
+            }
+            for i in (0..self.altstack_as_u32().len()).rev() {
+                { i } OP_ROLL
+                OP_TOALTSTACK
+            }
+        }
+    }
 }
 
 /// Converts a slice of bytes to a vector of u32 values.
@@ -104,10 +123,10 @@ pub(super) fn bytes_to_u32_array(bytes: &[u8]) -> Vec<u32> {
     let mut u32_array = Vec::with_capacity((bytes.len() + 3) / 4); // Ceiling division to account for partial chunks.
 
     for (i, chunk) in bytes.chunks(4).enumerate() {
-        if i % 2 == 1 {
-            // Skip every second chunk, as it represents the altstack
-            continue;
-        }
+        // if i % 2 == 1 {
+        //     // Skip every second chunk, as it represents the altstack
+        //     continue;
+        // }
 
         // Handle chunks with fewer than 4 bytes
         let padded_chunk = match chunk.len() {
