@@ -13,22 +13,27 @@ pub enum StackEntry {
 }
 
 impl StackEntry {
-	
-	// This assumes the StackEntry fit in a u32 and will pad it with leading zeros to 4 bytes.
-	pub fn serialize_to_bytes(self) -> Vec<u8> {
+    // This assumes the StackEntry fit in a u32 and will pad it with leading zeros to 4 bytes.
+    pub fn serialize_to_bytes(self) -> Vec<u8> {
         match self {
             StackEntry::Num(num) => {
-				assert!(num <= u32::MAX.into(), "There should not be entries with more than 32 bits on the stack at this point");
-				num.to_le_bytes().to_vec()
-			}
+                assert!(
+                    num <= u32::MAX.into(),
+                    "There should not be entries with more than 32 bits on the stack at this point"
+                );
+                num.to_le_bytes().to_vec()
+            }
             StackEntry::StrRef(v) => {
-				let mut v = v.borrow().to_vec();
-				assert!(v.len() <= 4, "There should not be entries with more than 32 bits on the stack at this point");
-				while v.len() < 4 {
-					v.push(0)
-				}
-				v
-			},
+                let mut v = v.borrow().to_vec();
+                assert!(
+                    v.len() <= 4,
+                    "There should not be entries with more than 32 bits on the stack at this point"
+                );
+                while v.len() < 4 {
+                    v.push(0)
+                }
+                v
+            }
         }
     }
 }
@@ -163,13 +168,13 @@ impl Stack {
             StackEntry::StrRef(v) => v.borrow().to_vec(),
         }
     }
-	
-	// Will serialize the stack into a series of bytes such that every 4 bytes correspond to a u32
-	// (or smaller) stack entry (smaller entries are padded with 0).
+
+    // Will serialize the stack into a series of bytes such that every 4 bytes correspond to a u32
+    // (or smaller) stack entry (smaller entries are padded with 0).
     pub fn serialize_to_bytes(self) -> Vec<u8> {
         let mut bytes = vec![];
         for entry in self.0 {
-        	bytes.extend(entry.serialize_to_bytes());
+            bytes.extend(entry.serialize_to_bytes());
         }
         bytes
     }
