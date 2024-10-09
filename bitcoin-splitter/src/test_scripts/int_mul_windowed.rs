@@ -200,16 +200,13 @@ mod tests {
             // while the second input is the output of the previous shard
             let mut first_input = input.clone();
             if i > 0 {
-                first_input = split_result.intermediate_states[i - 1].to_bytes().inject_script();
+                first_input = split_result.intermediate_states[i - 1]
+                    .to_bytes()
+                    .inject_script();
             }
-
-            let second_input = split_result.intermediate_states[i].to_bytes().inject_script();
-
-            println!("Expected: {:?}", split_result.intermediate_states[i].inject_script().len());
-            println!("Actual: {:?}", second_input.to_asm_string().len());
-
-            println!("Expected: {:?}", split_result.intermediate_states[i].inject_script());
-            println!("Actual: {:?}", second_input.to_asm_string());
+            let second_input = split_result.intermediate_states[i]
+                .to_bytes()
+                .inject_script();
 
             // Forming the function
             let function = split_result.shards[i].clone();

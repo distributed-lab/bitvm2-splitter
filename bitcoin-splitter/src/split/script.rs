@@ -59,6 +59,11 @@ impl SplitResult {
         self.intermediate_states.len()
     }
 
+    /// Returns whether the split result is empty
+    pub fn is_empty(&self) -> bool {
+        self.intermediate_states.is_empty()
+    }
+
     /// Returns the last intermediate state, ignoring the possibility of the empty vector
     pub fn must_last_state(&self) -> &IntermediateState {
         self.intermediate_states

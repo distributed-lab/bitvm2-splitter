@@ -127,12 +127,7 @@ impl IntermediateStateAsBytes {
 pub(super) fn bytes_to_u32_array(bytes: &[u8]) -> Vec<u32> {
     let mut u32_array = Vec::with_capacity((bytes.len() + 3) / 4); // Ceiling division to account for partial chunks.
 
-    for (i, chunk) in bytes.chunks(4).enumerate() {
-        // if i % 2 == 1 {
-        //     // Skip every second chunk, as it represents the altstack
-        //     continue;
-        // }
-
+    for chunk in bytes.chunks(4) {
         // Handle chunks with fewer than 4 bytes
         let padded_chunk = match chunk.len() {
             4 => [chunk[0], chunk[1], chunk[2], chunk[3]],

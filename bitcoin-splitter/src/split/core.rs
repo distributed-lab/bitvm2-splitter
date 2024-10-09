@@ -1,6 +1,6 @@
 //! Module containing the logic of splitting the script into smaller parts
 
-use std::{panic, usize};
+use std::panic;
 
 use bitcoin::{
     opcodes::all::{OP_ENDIF, OP_IF, OP_NOTIF},
