@@ -76,6 +76,17 @@ pub fn execute_script(script: ScriptBuf) -> ExecuteInfo {
     }
 }
 
+pub fn run(script: bitcoin::ScriptBuf) {
+    let exec_result = execute_script(script);
+    if !exec_result.success {
+        println!(
+            "ERROR: {:?} <--- \n STACK: {:#?} \n ALTSTACK {:#?}",
+            exec_result.error, exec_result.main_stack, exec_result.alt_stack
+        );
+    }
+    assert!(exec_result.success);
+}
+
 /// Execute a script on stack without `MAX_STACK_SIZE` limit.
 /// This function is only used for script test, not for production.
 ///

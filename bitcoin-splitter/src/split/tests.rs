@@ -3,7 +3,7 @@ use crate::{
         core::SplitType,
         script::{IOPair, SplitableScript},
     },
-    test_scripts::int_mul::U254MulScript,
+    test_scripts::int_mul_windowed::U254MulScript,
     treepp::*,
     utils::stack_to_script,
 };
