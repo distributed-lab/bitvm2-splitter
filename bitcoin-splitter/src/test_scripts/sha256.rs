@@ -61,7 +61,7 @@ mod tests {
     #[test]
     fn test_naive_split_correctness() {
         // Choosing the number of bytes for the test
-        const TEST_BYTES_NUM: usize = 80;
+        const TEST_BYTES_NUM: usize = 180;
         type SHA256ScriptType = SHA256Script<TEST_BYTES_NUM>;
 
         // Generating a random valid input for the script and the script itself
@@ -72,7 +72,8 @@ mod tests {
         );
 
         // Splitting the script into shards
-        let split_result = SHA256ScriptType::split(input.clone(), SplitType::ByInstructions);
+        let split_result =
+            SHA256ScriptType::default_split(input.clone(), SplitType::ByInstructions);
 
         // Now, we are going to concatenate all the shards and verify that the script is also correct
         let verification_script = script! {
@@ -99,14 +100,14 @@ mod tests {
     #[test]
     fn test_naive_split() {
         // Choosing the number of bytes for the test
-        const TEST_BYTES_NUM: usize = 80;
+        const TEST_BYTES_NUM: usize = 120;
         type SHA256ScriptType = SHA256Script<TEST_BYTES_NUM>;
 
         // First, we generate the pair of input and output scripts
         let IOPair { input, output } = SHA256ScriptType::generate_valid_io_pair();
 
         // Splitting the script into shards
-        let split_result = SHA256ScriptType::split(input, SplitType::ByInstructions);
+        let split_result = SHA256ScriptType::default_split(input, SplitType::ByInstructions);
         println!("Split result: {:?}", split_result);
 
         // Checking the last state (which must be equal to the result of the multiplication)

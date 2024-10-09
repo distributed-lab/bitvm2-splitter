@@ -1,6 +1,8 @@
 //! This module contains the [`IntermediateState`] struct, which is used to store the intermediate
 //! state of the stack and altstack during the execution of a script split into the shards (subprograms).
 
+use core::fmt;
+
 use crate::{treepp::*, utils::stack_to_script};
 use bitcoin_scriptexec::Stack;
 
@@ -10,6 +12,13 @@ use bitcoin_scriptexec::Stack;
 pub struct IntermediateState {
     pub stack: Stack,
     pub altstack: Stack,
+}
+
+impl fmt::Debug for IntermediateState {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        writeln!(f, "Stack: {:?}", self.stack)?;
+        writeln!(f, "Altstack: {:?}", self.altstack)
+    }
 }
 
 impl IntermediateState {
@@ -53,5 +62,15 @@ impl IntermediateState {
         };
 
         Self::from_input_script(&insert_result_script, script)
+    }
+
+    /// Converts the stack to a vector of u32 values
+    pub fn interpret_as_u32_array(&self) -> Vec<u8> {
+        self.stack.clone().serialize_to_bytes()
+    }
+
+    /// Returns the size of the stack and altstack
+    pub fn size(&self) -> usize {
+        self.stack.len() + self.altstack.len()
     }
 }
