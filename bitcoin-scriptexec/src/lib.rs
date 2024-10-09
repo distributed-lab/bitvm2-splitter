@@ -12,9 +12,6 @@ use bitcoin::sighash::SighashCache;
 use bitcoin::taproot::{self, TapLeafHash};
 use bitcoin::transaction::{self, Transaction, TxOut};
 
-#[cfg(feature = "serde")]
-use serde;
-
 #[macro_use]
 mod macros;
 
@@ -125,23 +122,19 @@ impl ExecutionResult {
                 ExecCtx::Legacy => {
                     if final_stack.is_empty() {
                         false
-                    } else if !script::read_scriptbool(&final_stack.last().unwrap()) {
-                        false
                     } else {
-                        true
+                        script::read_scriptbool(&final_stack.last().unwrap())
                     }
                 }
                 ExecCtx::SegwitV0 | ExecCtx::Tapscript => {
                     if final_stack.len() != 1 {
                         false
-                    } else if !script::read_scriptbool(&final_stack.last().unwrap()) {
-                        false
                     } else {
-                        true
+                        script::read_scriptbool(&final_stack.last().unwrap())
                     }
                 }
             },
-            final_stack: final_stack,
+            final_stack,
             error: None,
             opcode: None,
         }
@@ -215,7 +208,7 @@ impl Exec {
             }
 
             if let Some((_, Some(ref annex))) = tx.taproot_annex_scriptleaf {
-                if annex.get(0) != Some(&taproot::TAPROOT_ANNEX_PREFIX) {
+                if annex.first() != Some(&taproot::TAPROOT_ANNEX_PREFIX) {
                     return Err(Error::Other("invalid annex: missing prefix"));
                 }
             }
@@ -252,12 +245,12 @@ impl Exec {
         let start_validation_weight = VALIDATION_WEIGHT_OFFSET + witness_size as i64;
 
         let mut ret = Exec {
-            ctx: ctx,
+            ctx,
             result: None,
 
             sighashcache: SighashCache::new(tx.tx.clone()),
-            script: script,
-            instructions: instructions,
+            script,
+            instructions,
             current_position: 0,
             cond_stack: ConditionStack::new(),
             //TODO(stevenroose) does this need to be reversed?
@@ -268,11 +261,11 @@ impl Exec {
             last_codeseparator_pos: None,
             script_code: script,
 
-            opt: opt,
-            tx: tx,
+            opt,
+            tx,
 
             stats: ExecStats {
-                start_validation_weight: start_validation_weight,
+                start_validation_weight,
                 validation_weight: start_validation_weight,
                 ..Default::default()
             },
@@ -309,7 +302,7 @@ impl Exec {
         self.script.len() - self.instructions.as_script().len()
     }
 
-    pub fn remaining_script<'a>(&'a self) -> &'a Script {
+    pub fn remaining_script(&self) -> &Script {
         let pos = self.script_position();
         &self.script[pos..]
     }
@@ -495,14 +488,12 @@ impl Exec {
                 // Some things we do even when we're not executing.
 
                 // Note how OP_RESERVED does not count towards the opcode limit.
-                if self.ctx == ExecCtx::Legacy || self.ctx == ExecCtx::SegwitV0 {
-                    if op.to_u8() > OP_PUSHNUM_16.to_u8() {
+                if (self.ctx == ExecCtx::Legacy || self.ctx == ExecCtx::SegwitV0) && op.to_u8() > OP_PUSHNUM_16.to_u8() {
                         self.opcode_count += 1;
                         if self.opcode_count > MAX_OPS_PER_SCRIPT {
                             return self.fail(ExecError::OpCount);
                         }
                     }
-                }
 
                 match op {
                     OP_CAT if !self.opt.experimental.op_cat || self.ctx != ExecCtx::Tapscript => {
@@ -593,10 +584,8 @@ impl Exec {
 
                 //TODO(stevenroose) check this logic
                 //TODO(stevenroose) check if this cast is ok
-                if n & SEQUENCE_LOCKTIME_DISABLE_FLAG as i64 == 0 {
-                    if !self.check_sequence(n) {
-                        return Err(ExecError::UnsatisfiedLocktime);
-                    }
+                if n & SEQUENCE_LOCKTIME_DISABLE_FLAG as i64 == 0 && !self.check_sequence(n) {
+                    return Err(ExecError::UnsatisfiedLocktime);
                 }
             }
             OP_CSV => {} // otherwise nop
@@ -618,10 +607,8 @@ impl Exec {
                         }
                     }
                     // Under segwit v0 only enabled as policy.
-                    if self.opt.verify_minimal_if && self.ctx == ExecCtx::SegwitV0 {
-                        if top.len() > 1 || (top.len() == 1 && top[0] != 1) {
-                            return Err(ExecError::TapscriptMinimalIf);
-                        }
+                    if self.opt.verify_minimal_if && self.ctx == ExecCtx::SegwitV0 && (top.len() > 1 || (top.len() == 1 && top[0] != 1)) {
+                        return Err(ExecError::TapscriptMinimalIf);
                     }
                     let b = if op == OP_NOTIF {
                         !script::read_scriptbool(&top)
@@ -827,7 +814,7 @@ impl Exec {
                 self.stack.needn(2)?;
                 let x2 = self.stack.popstr().unwrap();
                 let x1 = self.stack.popstr().unwrap();
-                let ret: Vec<u8> = x1.into_iter().chain(x2.into_iter()).collect();
+                let ret: Vec<u8> = x1.into_iter().chain(x2).collect();
                 if ret.len() > MAX_SCRIPT_ELEMENT_SIZE {
                     return Err(ExecError::PushSize);
                 }
@@ -942,27 +929,27 @@ impl Exec {
             OP_RIPEMD160 => {
                 let top = self.stack.popstr()?;
                 self.stack
-                    .pushstr(&ripemd160::Hash::hash(&top[..]).to_byte_array().to_vec());
+                    .pushstr(&ripemd160::Hash::hash(&top[..]).to_byte_array());
             }
             OP_SHA1 => {
                 let top = self.stack.popstr()?;
                 self.stack
-                    .pushstr(&sha1::Hash::hash(&top[..]).to_byte_array().to_vec());
+                    .pushstr(&sha1::Hash::hash(&top[..]).to_byte_array());
             }
             OP_SHA256 => {
                 let top = self.stack.popstr()?;
                 self.stack
-                    .pushstr(&sha256::Hash::hash(&top[..]).to_byte_array().to_vec());
+                    .pushstr(&sha256::Hash::hash(&top[..]).to_byte_array());
             }
             OP_HASH160 => {
                 let top = self.stack.popstr()?;
                 self.stack
-                    .pushstr(&hash160::Hash::hash(&top[..]).to_byte_array().to_vec());
+                    .pushstr(&hash160::Hash::hash(&top[..]).to_byte_array());
             }
             OP_HASH256 => {
                 let top = self.stack.popstr()?;
                 self.stack
-                    .pushstr(&sha256d::Hash::hash(&top[..]).to_byte_array().to_vec());
+                    .pushstr(&sha256d::Hash::hash(&top[..]).to_byte_array());
             }
 
             OP_CODESEPARATOR => {

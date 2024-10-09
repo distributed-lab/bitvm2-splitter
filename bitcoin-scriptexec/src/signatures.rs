@@ -51,7 +51,7 @@ impl Exec {
         SECP.verify_ecdsa(&sighash, &sig, &pk).is_ok()
     }
 
-    /// [pk] should be passed as 32-bytes.
+    /// pk should be passed as 32-bytes.
     pub fn check_sig_schnorr(&mut self, sig: &[u8], pk: &[u8]) -> Result<(), ExecError> {
         assert_eq!(pk.len(), 32);
 

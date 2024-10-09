@@ -36,6 +36,7 @@ pub fn script_hex_to_asm(script_hex: &str) -> Result<String, JsValue> {
 ///   - start_validation_weight
 ///   - validation_weight
 #[wasm_bindgen]
+#[allow(clippy::boxed_local)] // NOTE(Velnbur): just a wasm_bindgen thing
 pub fn run_script(script_hex: &str, script_witness: Box<[JsValue]>) -> Result<JsValue, JsValue> {
     console_error_panic_hook::set_once();
 
@@ -80,7 +81,7 @@ pub fn run_script(script_hex: &str, script_witness: Box<[JsValue]>) -> Result<Js
                 "final_stack": res.final_stack.iter_str()
                     .map(|i| i.as_hex().to_string())
                     .collect::<Vec<_>>(),
-                "stats": serde_json::to_value(&exec.stats()).unwrap(),
+                "stats": serde_json::to_value(exec.stats()).unwrap(),
             });
             if !res.success {
                 let obj = ret.as_object_mut().unwrap();

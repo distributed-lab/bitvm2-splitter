@@ -3,8 +3,6 @@ use alloc::rc::Rc;
 use bitcoin::script;
 use core::cell::RefCell;
 use core::cmp::PartialEq;
-use core::slice::Iter;
-use std::iter::Map;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum StackEntry {
@@ -66,8 +64,8 @@ impl Stack {
         debug_assert!(offset < 0, "offsets should be < 0");
         self.0
             .len()
-            .checked_sub(offset.abs() as usize)
-            .and_then(|i| Some(&self.0[i]))
+            .checked_sub(offset.unsigned_abs())
+            .map(|i| &self.0[i])
             .ok_or(ExecError::InvalidStackOperation)
     }
 
@@ -155,7 +153,7 @@ impl Stack {
         self.0.remove(v);
     }
 
-    pub fn iter_str(&self) -> Map<Iter<StackEntry>, fn(&StackEntry) -> Vec<u8>> {
+    pub fn iter_str(&self) -> impl DoubleEndedIterator<Item = Vec<u8>> + '_ {
         self.0.iter().map(|v| match v {
             StackEntry::Num(v) => script::scriptint_vec(*v),
             StackEntry::StrRef(v) => v.borrow().to_vec(),
