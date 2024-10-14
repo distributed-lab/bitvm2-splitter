@@ -3,7 +3,8 @@ members = [
 	"bitcoin-splitter",
 	"integration-tests",
 	"bitcoin-winternitz",
-	"bitcoin-scriptexec"
+	"bitcoin-scriptexec",
+    "core"
 ]
 resolver = "2"
 
