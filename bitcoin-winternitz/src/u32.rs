@@ -37,6 +37,21 @@ impl SecretKey {
     }
 
     #[cfg(feature = "rand")]
+    /// Contruct new [`SecretKey`] randomly
+    pub fn random<Rng>(rng: &mut Rng) -> Self
+    where
+        Rng: rand::Rng,
+    {
+        let mut buf = [Hash160::all_zeros(); N];
+
+        for chunk in &mut buf {
+            *chunk = Hash160::from_byte_array(rng.gen());
+        }
+
+        Self(buf)
+    }
+
+    #[cfg(feature = "rand")]
     /// Construct new [`SecretKey`] from seed, by generating required
     /// number of parts (chunks).
     pub fn from_seed<Seed, Rng>(seed: Seed) -> Self
@@ -44,14 +59,8 @@ impl SecretKey {
         Seed: Sized + Default + AsMut<[u8]>,
         Rng: rand::SeedableRng<Seed = Seed> + rand::Rng,
     {
-        let mut buf = [Hash160::all_zeros(); N];
         let mut rng = Rng::from_seed(seed);
-
-        for chunk in &mut buf {
-            *chunk = Hash160::from_byte_array(rng.sample(rand::distributions::Standard));
-        }
-
-        Self(buf)
+        Self::random(&mut rng)
     }
 
     /// Return public key derived from secret one.

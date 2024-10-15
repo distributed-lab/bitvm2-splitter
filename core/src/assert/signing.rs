@@ -2,7 +2,7 @@ use crate::treepp::*;
 
 use bitcoin_splitter::split::intermediate_state::IntermediateState;
 use bitcoin_winternitz::u32::{checksig_verify_script, Message, PublicKey, SecretKey, Signature};
-use rand::rngs::SmallRng;
+use rand::{rngs::SmallRng, SeedableRng};
 
 /// Struct handling information about a single u32 element in the state array.
 /// Namely, besides the element itself, it also contains the public key, secret key,
@@ -20,7 +20,9 @@ impl SignedStackElement {
     /// Creates a new [`SignedStackElement`] by signing the given stack element
     fn sign(stack_element: u32) -> Self {
         // Creating a keypair
-        let secret_key = SecretKey::from_seed::<_, SmallRng>([1u8; 32]);
+        // TODO(@ZamDimon): Reconsider rng usage
+        let mut rng = SmallRng::from_entropy();
+        let secret_key = SecretKey::random(&mut rng);
         let public_key = secret_key.public_key();
 
         // Signing the message
