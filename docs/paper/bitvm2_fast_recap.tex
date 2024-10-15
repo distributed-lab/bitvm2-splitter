@@ -257,20 +257,23 @@ digit numbers or recover the state from $d$ digit numbers on stack,
 which without the bitwise operations or \texttt{OP\_CAT} for larger
 than 32-bit values is nearly impossible.
 
-\subsubsection{32-bit stack elements}\label{sec:winternitz-31-bit-integers}
+\subsubsection{Winternitz Signatures in Bitcoin
+  Script}\label{sec:winternitz-in-bitcoin-script}
 
-Instead of bitwise operations, script can use arithmetic ones, but the
-Bitcoin Script supports opcodes such as \texttt{OP\_ADD}, only for
-32-bit signed integers, and as the last one is reserved for a sign,
-only 31 bits can be used to store the state. This could be considered
-as limitation, but as most of the complex arithmetic operations in
-BitVM are done using only 32-bit integers, we can easily fix $\ell$ as
-$\ell = 32$ for all intermidiate states.
+Instead of bitwise operations, the Bitcoin script can use arithmetic
+ones. Still, this arithmetic is limited and contains only basic
+opcodes such as \texttt{OP\_ADD}. To make matters worse, all the
+corresponding operations can be applied to 32-bit elements only, and
+as the last one is reserved for a sign, only 31 bits can be used to
+store the state. This limitation can be considered strong, but most of
+the math can be implemented through 32-bit stack elements. So lets fix
+$\ell = 32$ --- maximum size of the stack element in bits.
 
 By defining the $\mathsf{Enc}(m)$ as a domination free function
-$P(m)$, like described in~\cite{applied-crypto}, $d+1$ becomes the
-power of two which splits $m$ by some number of equal chunks of
-$\log_2{(d+1)}$ bits, and $k$ becomes the sum of $n_0$ --- the number of
+$P(m)$, like described in~\cite{applied-crypto}, it is convenient to
+make $d+1$ the power of two. Therefore, from now on, we set
+$d+1 = 2^w$ for some $w \in \mathbb{N}$. Which splits $m$ by some number of equal
+chunks of $w$ bits, and $k$ becomes the sum of $n_0$ --- the number of
 $d$-digit numbers from $m$, and $n_1$ a checksum (see
 table~\ref{tab:winternitz}).
 
@@ -279,19 +282,14 @@ table~\ref{tab:winternitz}).
 \begin{verbatim}
 import math
 l = 32
-d = [3, 7, 15, 31, 63, 127, 255]
-bits = lambda d: math.log(d+1, 2)
-bits = lambda d: math.ceil(math.log(d+1, 2))
-n0 = lambda bits: math.ceil(l / bits)
-n1 = lambda bits,n0: math.ceil((2**(bits) * n0).bit_length() / bits)
-k = lambda n0, n1: n0 + n1
+ds = [3, 7, 15, 31, 63, 127, 255]
 
 for d in ds:
-   bits_ = bits(d)
-   n0_ = n0(bits_)
-   n1_ = n1(bits_, n0_)
-   k_ = k(n0_, n1_)
-   print(f"{bits_} & {d} & {n0_} & {n1_} & {k_} \\\\")
+    w = math.ceil(math.log(d+1, 2))
+    n0 = math.ceil(l / w)
+    n1 = math.ceil((2**w * n0).bit_length() / w)
+    k = n0 + n1
+    print(f"{w} & {n0} & {n1} & {k} \\\\")
 \end{verbatim}
 \fi
 
@@ -299,26 +297,29 @@ for d in ds:
   \centering
   \begin{tabular}{lcccc}
     \toprule
-    bits & $d$ & $n_0$ & $n_1$ & $k$ \\
+    $w$ & $n_0$ & $n_1$ & $k$ \\
     \midrule
-    2 & 3 & 16 & 4 & 20 \\
-    3 & 7 & 11 & 3 & 14 \\
-    4 & 15 & 8 & 2 & 10 \\
-    5 & 31 & 7 & 2 & 9 \\
-    6 & 63 & 6 & 2 & 8 \\
-    7 & 127 & 5 & 2 & 7 \\
-    8 & 255 & 4 & 2 & 6 \\
+    2 & 16 & 4 & 20 \\
+    3 & 11 & 3 & 14 \\
+    4 & 8 & 2 & 10 \\
+    5 & 7 & 2 & 9 \\
+    6 & 6 & 2 & 8 \\
+    7 & 5 & 2 & 7 \\
+    8 & 4 & 2 & 6 \\
     \bottomrule
   \end{tabular}
   \caption{Different values of $k$ depending on $d$ for 32-bit
   message}\label{tab:winternitz}
 \end{table}
 
-If chunks are equal lengthes, the recovery from $n_0$ digits is
-simply as:
+If chunks are of equal lengths, the recovery from $n_0$ digits is
+simply:
 
 \begin{equation}
-  m = \sum_{i = 0}^{n_0} e_i \cdot 2^{i \log_2{(d+1)}}
+  \begin{aligned}
+    w &:= \log_2{(d+1)} \\
+    m &= \sum_{i = 0}^{n_0} e_i \cdot 2^{i w}
+  \end{aligned}
   \label{eq:u32-recovery}
 \end{equation}
 
@@ -329,7 +330,7 @@ Script is:
 
 \begin{empheqboxed}
   \begin{align*}
-    \elem{e_j} \underbrace{\opcode{OP\_DUP} \opcode{OP\_ADD}}_{n \; times}
+    \elem{e_j} \underbrace{\opcode{OP\_DUP} \opcode{OP\_ADD}}_{n \; \text{times}}
   \end{align*}
 \end{empheqboxed}
 
@@ -343,7 +344,7 @@ like this:
 \begin{empheqboxed}
   \begin{align*}
     & \elem{\sigma_j} \underbrace{\opcode{OP\_DUP}
-    \opcode{OP\_HASH}}_{d \; times} \\
+    \opcode{OP\_HASH}}_{d \; \text{times}} \\
     & \elem{e_j} \opcode{OP\_PICK}
   \end{align*}
 \end{empheqboxed}
@@ -354,40 +355,41 @@ element, which is unfortunatly a lot. Parts of the public key make the
 largest contribution to the script size. Assuming that as $H$
 implementation uses \texttt{OP\_HASH160}, each part $(y_1,\dots,y_k)$
 of the public key $\mathsf{pk}_{m}$ adds 40 bytes to the total script
-size. Additionaly, for calculating the lookup table for signature
+size. Additionaly, for calculating a lookup table for signature
 verification, $2d \cdot k$ opcodes are used. Further more, for message
-recovery $2 \sum_{i = 0}^{n_0} i \log_2{(d+1)}$ number of opcodes are
-added too. So the total script size, excluding utility opcodes, will
-be at least $40 * k + 2 d k + 2 \sum_{i = 0}^{n_0} i \log_2{(d+1)}$ (the
-  sizes for different $d$ can be seen in
-table~\ref{tab:winternitz-script-size}).
+recovery $2 \sum_{i = 0}^{n_0} i w$ number of opcodes are added
+too. Also, note that:
+
+\begin{equation}
+  \label{eq:opcodes-for-recovery-number}
+    2 \sum_{i = 0}^{n_0} i w = w n_0 (n_0+1) \approx w n_0^2
+\end{equation}
+
+So the total script size, excluding utility opcodes, will be at least
+$40k + 2 d k + w n_0 (n_0+1)$ (the sizes for different $d$ can be seen
+in table~\ref{tab:winternitz-script-size}).
 
 \iffalse{}
 %The python script i used for this table:
 \begin{verbatim}
 import math
 l = 32
-d = [3, 7, 15, 31, 63, 127, 255]
-bits = lambda d: math.log(d+1, 2)
-bits = lambda d: math.ceil(math.log(d+1, 2))
-n0 = lambda bits: math.ceil(l / bits)
-n1 = lambda bits,n0: math.ceil((2**(bits) * n0).bit_length() / bits)
-k = lambda n0, n1: n0 + n1
+ds = [3, 7, 15, 31, 63, 127, 255]
 
 for d in ds:
-    bits_ = bits(d)
-    n0_ = n0(bits_)
-    n1_ = n1(bits_, n0_)
-    k_ = k(n0_, n1_)
-
-    pk_size = 40 * k_
-    ver_size = 2 * d * k_
+    w = math.ceil(math.log(d+1, 2))
+    n0 = math.ceil(l / w)
+    n1 = math.ceil((2**w * n0).bit_length() / w)
+    k = n0 + n1
+    
+    pk_size = 40 * k
+    ver_size = 2 * d * k
     rec_size = 0
-    for i in range(0, n0_):
-        rec_size += int(i * math.log(d+1, 2))
-
+    for i in range(0, n0):
+        rec_size += int(i * w)
+    
     total = pk_size + ver_size + rec_size
-
+    
     print(f"{d} & {pk_size} & {ver_size} & {rec_size} & {total} \\\\")
 \end{verbatim}
 \fi
