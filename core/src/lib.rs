@@ -1,5 +1,6 @@
 pub mod assert;
 pub mod debug;
+pub mod utils;
 pub mod winternitz;
 
 #[allow(dead_code)]

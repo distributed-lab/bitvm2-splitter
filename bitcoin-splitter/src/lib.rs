@@ -9,12 +9,12 @@ pub mod treepp {
 }
 
 pub mod split;
+pub mod test_scripts;
+pub mod utils;
 
 pub(crate) mod bitvm;
 pub(crate) mod debug;
 pub(crate) mod pseudo;
-pub(crate) mod test_scripts;
-pub(crate) mod utils;
 
 #[cfg(test)]
 mod tests {

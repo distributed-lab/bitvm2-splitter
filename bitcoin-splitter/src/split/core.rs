@@ -39,8 +39,9 @@ pub(super) const STACK_SIZE_INDEX: usize = 1000;
 ///
 /// - [`SplitType::ByInstructions`]- splits the script by the number of instructions
 /// - [`SplitType::ByBytes`] - splits the script by the number of bytes
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Default)]
 pub enum SplitType {
+    #[default]
     ByInstructions,
     ByBytes,
 }

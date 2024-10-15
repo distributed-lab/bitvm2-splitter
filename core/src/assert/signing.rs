@@ -4,6 +4,9 @@ use bitcoin_splitter::split::intermediate_state::IntermediateState;
 use bitcoin_winternitz::u32::{checksig_verify_script, Message, PublicKey, SecretKey, Signature};
 use rand::{rngs::SmallRng, SeedableRng};
 
+/// Maximum value of the stack element
+const MAX_STACK_ELEMENT_VALUE: u32 = (1 << 31) - 1;
+
 /// Struct handling information about a single u32 element in the state array.
 /// Namely, besides the element itself, it also contains the public key, secret key,
 /// and the signature of the element.
@@ -53,14 +56,25 @@ pub struct SignedIntermediateState {
 
 impl SignedIntermediateState {
     /// Creates a new IntermediateStateHolder from the given intermediate state
-    pub fn sign(state: IntermediateState) -> Self {
+    pub fn sign(state: &IntermediateState) -> Self {
         let stack = state.to_bytes().stack_as_u32();
         let altstack = state.to_bytes().altstack_as_u32();
 
+        // Now, verifying that all elements are below 1<<31 - 1
+        for element in stack.iter().chain(altstack.iter()) {
+            assert!(*element <= MAX_STACK_ELEMENT_VALUE, "element is too large");
+        }
+
+        // Signing each element
         let stack = stack.into_iter().map(SignedStackElement::sign).collect();
         let altstack = altstack.into_iter().map(SignedStackElement::sign).collect();
 
         Self { stack, altstack }
+    }
+
+    /// Returns the total length of the stack and altstack
+    pub fn total_len(&self) -> usize {
+        self.stack.len() + self.altstack.len()
     }
 
     /// Script that pushes zipped signature and message to the stack for
@@ -68,12 +82,12 @@ impl SignedIntermediateState {
     pub fn witness_script(&self) -> Script {
         script! {
             // Pushing the stack
-            for element in &self.stack {
+            for element in self.stack.clone() {
                 { element.signature.to_script_sig() }
             }
 
             // Pushing the altstack
-            for element in &self.altstack {
+            for element in self.altstack.clone().into_iter().rev() {
                 { element.signature.to_script_sig() }
             }
         }
@@ -84,9 +98,9 @@ impl SignedIntermediateState {
     /// the intermediate state.
     pub fn verification_script_toaltstack(&self) -> Script {
         script! {
-            // For each element, we need to push the public key and run the 
+            // For each element, we need to push the public key and run the
             // Winternitz verification script
-            for element in self.altstack.clone().into_iter().rev() {
+            for element in self.altstack.clone() {
                 { checksig_verify_script(&element.public_key) }
                 { Message::recovery_script() }
                 OP_TOALTSTACK
@@ -101,7 +115,7 @@ impl SignedIntermediateState {
         }
     }
 
-    /// Script that pops the elements from the altstack after 
+    /// Script that pops the elements from the altstack after
     /// the verification of the witness script.
     pub fn verification_script_fromaltstack(&self) -> Script {
         script! {

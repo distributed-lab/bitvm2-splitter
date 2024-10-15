@@ -5,7 +5,7 @@
 //! - A script that performs an addition of two 254-bit numbers.
 //! - A script that performs a multiplication of two 254-bit numbers using w-windowed approach.
 
-pub(crate) mod int_add;
-pub(crate) mod int_mul_karatsuba;
-pub(crate) mod int_mul_windowed;
-pub(crate) mod sha256;
+pub mod int_add;
+pub mod int_mul_karatsuba;
+pub mod int_mul_windowed;
+pub mod sha256;

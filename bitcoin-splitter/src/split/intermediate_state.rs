@@ -9,6 +9,7 @@ use bitcoin_scriptexec::Stack;
 /// Structure that represents the intermediate state.
 /// It contains the stack and altstack after the execution of the
 /// corresponding shard.
+#[derive(Clone)]
 pub struct IntermediateState {
     pub stack: Stack,
     pub altstack: Stack,
@@ -48,6 +49,17 @@ impl IntermediateState {
                     OP_TOALTSTACK
                 }
             }
+        }
+    }
+
+    /// Creates a new instance of the IntermediateState based on the given
+    /// script and the stack and altstack after the execution of the script
+    pub fn from_inject_script(inject_script: &Script) -> Self {
+        let result = execute_script(inject_script.clone());
+
+        Self {
+            stack: result.main_stack.clone(),
+            altstack: result.alt_stack.clone(),
         }
     }
 

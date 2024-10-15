@@ -3,8 +3,8 @@ use bitcoin_splitter::{split::intermediate_state::IntermediateState, treepp::Scr
 
 use crate::winternitz::PublicKey;
 
-pub mod signing;
 pub mod disprove_script;
+pub mod signing;
 
 #[cfg(test)]
 mod tests;
