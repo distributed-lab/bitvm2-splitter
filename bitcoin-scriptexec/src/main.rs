@@ -120,6 +120,8 @@ fn inner_main() -> Result<(), String> {
         println!("Stats:\n{:#?}", exec.stats());
         println!("Time elapsed: {}ms", start.elapsed().as_millis());
     }
+
+    Ok(())
 }
 
 fn main() {
