@@ -12,13 +12,13 @@ use bitcoin_splitter::split::{
 ///
 /// The script structure in general is simple:
 /// ## Witness:
-/// ```no_run
+/// ```bitcoin_script
 /// { Enc(z[i+1]) and Sig[i+1] } // Zipped
 /// { Enc(z[i]) and Sig[i] }     // Zipped
 /// ```
 ///
 /// ## Script:
-/// ```no_run
+/// ```bitcoin_script
 /// { pk[i] }                // { Zip(Enc(z[i+1]), Sig[i+1]), Zip(Enc(z[i]), Sig[i]), pk[i] }
 /// { OP_WINTERNITZVERIFY }  // { Zip(Enc(z[i+1]), Sig[i+1]), Enc(z[i]) }
 /// { OP_RESTORE }           // { Zip(Enc(z[i+1]), Sig[i+1]), z[i] }

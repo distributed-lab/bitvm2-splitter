@@ -47,7 +47,7 @@ pub enum SplitType {
 }
 
 /// Splits the given script into smaller parts. Tries to keep each chunk size
-/// to the optimal size ([`OPTIMAL_SCRIPT_SIZE`]) as close as possible.
+/// to the optimal size `chunk_size` as close as possible.
 pub(super) fn split_into_shards(
     script: &Script,
     chunk_size: usize,
