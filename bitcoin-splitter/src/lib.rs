@@ -9,10 +9,8 @@ pub mod treepp {
 }
 
 pub mod split;
-pub mod test_scripts;
 pub mod utils;
 
-pub(crate) mod bitvm;
 pub(crate) mod debug;
 pub(crate) mod pseudo;
 

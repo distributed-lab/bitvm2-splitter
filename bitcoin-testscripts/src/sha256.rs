@@ -4,9 +4,9 @@
 
 use crate::{
     bitvm::hash::{sha256::sha256, utils::push_bytes_hex},
-    split::script::{IOPair, SplitableScript},
     treepp::*,
 };
+use bitcoin_splitter::split::script::{IOPair, SplitableScript};
 
 use rand::{Rng, RngCore};
 use sha2::{Digest, Sha256};
@@ -72,7 +72,9 @@ impl<const INPUT_SIZE: usize> SplitableScript<INPUT_SIZE, { OUTPUT_SIZE }>
 
 #[cfg(test)]
 mod tests {
-    use crate::{split::core::SplitType, utils::stack_to_script};
+    use bitcoin_splitter::split::core::SplitType;
+
+    use crate::utils::stack_to_script;
 
     use super::*;
 

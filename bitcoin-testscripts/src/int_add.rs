@@ -2,7 +2,7 @@
 //! for performing the addition of two large integers
 //! (exceeding standard Bitcoin 31-bit integers)
 
-use crate::{
+use bitcoin_splitter::{
     split::script::{IOPair, SplitableScript},
     treepp::*,
 };
@@ -74,9 +74,10 @@ impl SplitableScript<{ INPUT_SIZE }, { OUTPUT_SIZE }> for U254AddScript {
 
 #[cfg(test)]
 mod tests {
+    use bitcoin_splitter::split::core::SplitType;
     use bitcoin_window_mul::traits::comparable::Comparable;
 
-    use crate::{split::core::SplitType, utils::stack_to_script};
+    use crate::utils::stack_to_script;
 
     use super::*;
 

@@ -48,7 +48,7 @@ pub enum SplitType {
 
 /// Splits the given script into smaller parts. Tries to keep each chunk size
 /// to the optimal size `chunk_size` as close as possible.
-pub(super) fn split_into_shards(
+pub fn split_into_shards(
     script: &Script,
     chunk_size: usize,
     split_type: SplitType,
@@ -110,7 +110,7 @@ pub(super) fn split_into_shards(
 
 /// Fuzzy split of the script into smaller parts by searching for the optimal size
 /// by checking various script sizes
-pub(super) fn fuzzy_split(input: Script, script: Script, split_type: SplitType) -> SplitResult {
+pub fn fuzzy_split(input: Script, script: Script, split_type: SplitType) -> SplitResult {
     // Define the limits
     const MIN_CHUNK_SIZE: usize = 100;
     const MAX_CHUNK_SIZE: usize = MAX_SCRIPT_SIZE;
@@ -150,7 +150,7 @@ pub(super) fn fuzzy_split(input: Script, script: Script, split_type: SplitType) 
 }
 
 /// Default split of the script into smaller parts with the hard-coded optimal size
-pub(super) fn default_split(input: Script, script: Script, split_type: SplitType) -> SplitResult {
+pub  fn default_split(input: Script, script: Script, split_type: SplitType) -> SplitResult {
     naive_split(input, script, split_type, DEFAULT_SCRIPT_SIZE)
 }
 
@@ -159,7 +159,7 @@ pub(super) fn default_split(input: Script, script: Script, split_type: SplitType
 /// 2. We execute each shard with the input
 /// 3. Save intermediate results
 /// 4. Return all the shards and intermediate results in the form of [`SplitResult`]
-pub(super) fn naive_split(
+pub fn naive_split(
     input: Script,
     script: Script,
     split_type: SplitType,
