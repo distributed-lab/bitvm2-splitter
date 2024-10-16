@@ -72,7 +72,7 @@ impl DisproveScript {
             // { f[i](z[i]).mainstack, f[i](z[i]).altstack, z[i+1].mainstack }
             // while the altstack has z[i+1].altstack.
             // Thus, we have to pick f[i](z[i]).mainstack to the top of the stack
-            for _ in (0..to_signed.stack.len()).into_iter().rev() {
+            for _ in (0..to_signed.stack.len()).rev() {
                 { to_signed.total_len() + to_signed.stack.len() - 1 } OP_ROLL
             }
 

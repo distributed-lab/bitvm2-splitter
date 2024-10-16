@@ -11,7 +11,7 @@ pub fn OP_LONGEQUALVERIFY(length: usize) -> Script {
     }
 
     script! {
-        for j in (0..length).into_iter().rev() {
+        for j in (0..length).rev() {
             { j+1 } OP_ROLL OP_EQUALVERIFY
         }
     }
@@ -29,7 +29,7 @@ pub fn OP_LONGNOTEQUAL(length: usize) -> Script {
 
     script! {
         // Writing bits a[i] != b[i] for each i in the altstack
-        for j in (0..length).into_iter().rev() {
+        for j in (0..length).rev() {
             { j+1 } OP_ROLL OP_EQUAL OP_NOT OP_TOALTSTACK
         }
 

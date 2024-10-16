@@ -86,13 +86,13 @@ pub fn checksum(digits: [u8; N0 as usize]) -> u32 {
 
 /// Convert a number to digits
 pub fn to_digits<const DIGIT_COUNT: usize>(mut number: u32) -> [u8; DIGIT_COUNT] {
-    let mut digits: [u8; DIGIT_COUNT] = [0; DIGIT_COUNT];
-    for i in 0..DIGIT_COUNT {
+    let mut result_digits: [u8; DIGIT_COUNT] = [0; DIGIT_COUNT];
+    for result_digit in result_digits.iter_mut().take(DIGIT_COUNT) {
         let digit = number % (D + 1);
         number = (number - digit) / (D + 1);
-        digits[i] = digit as u8;
+        *result_digit = digit as u8;
     }
-    digits
+    result_digits
 }
 
 /// Compute the signature for a given message
@@ -110,7 +110,7 @@ pub fn sign_digits(secret_key: SecretKey, message_digits: [u8; N0 as usize]) -> 
 
 pub fn sign(secret_key: SecretKey, message_bytes: &[u8]) -> Script {
     // Convert message to digits
-    let mut message_digits = [0u8; 20 * 2 as usize];
+    let mut message_digits = [0u8; 20 * 2];
     for (digits, byte) in message_digits.chunks_mut(2).zip(message_bytes) {
         digits[0] = byte & 0b00001111;
         digits[1] = byte >> 4;
