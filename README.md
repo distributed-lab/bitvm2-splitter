@@ -8,7 +8,11 @@ The project contains multiple crates:
 
 | Crate | Description |
 | --- | --- |
-| [splitter](splitter/README.md) | A crate for splitting the Bitcoin script into multiple parts as suggested by the recent [_BitVM2 paper_](https://bitvm.org/bitvm_bridge.pdf). |
+| [bitcoin-splitter](bitcoin-splitter/README.md) | A crate for splitting the Bitcoin script into multiple parts as suggested by the recent [^1]). |
+| [bitcoin-winternitz](bitcoin-winternitz) | Winternitz Signature and recovery implementation based on BitVM's [`[signatures]`](https://github.com/BitVM/BitVM/tree/main/src/signatures) package. |
+| [bitcoin-utils](bitcoin-utils) | Helper package containing implementation of certain fundamental operations and debugging functions. |
+| [bitcoin-testscripts](bitcoin-testscripts) | A collection of test scripts for testing BitVM2 concept. |
+| [bitcoin-scriptexec](bitcoin-scriptexec) | A helper crate for executing Bitcoin scripts. Fork of [BitVM package](https://github.com/BitVM/rust-bitcoin-scriptexec). |
 
 ## Setting up a Local Bitcoin Node
 
@@ -50,10 +54,11 @@ bitcoin-cli generatetoaddress 101 $ADDRESS
 > [!NOTE]
 > Rewards for mined locally blocks will go to this address, but, by protocol rules, BTCs are mature only after 100 confirmations, so that's why 101 blocks are mined. You can see other in  `immature` balances fields, after executing next command.
 >
-> For more info about Bitcoin RPC API see [^1].
+> For more info about Bitcoin RPC API see [^2].
 
 ```shell
 bitcoin-cli getbalances
 ```
 
-[^1]: https://developer.bitcoin.org/reference/rpc/
+[^1]: https://bitvm.org/bitvm_bridge.pdf
+[^2]: https://developer.bitcoin.org/reference/rpc/
