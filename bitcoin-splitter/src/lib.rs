@@ -1,7 +1,7 @@
 #[allow(dead_code)]
 // Re-export what is needed to write treepp scripts
 pub mod treepp {
-    pub use crate::debug::execute_script;
+    pub use crate::debug::{execute_script, run};
     pub use bitcoin_script::{define_pushable, script};
 
     define_pushable!();
@@ -9,12 +9,12 @@ pub mod treepp {
 }
 
 pub mod split;
+pub mod test_scripts;
+pub mod utils;
 
 pub(crate) mod bitvm;
 pub(crate) mod debug;
 pub(crate) mod pseudo;
-pub(crate) mod test_scripts;
-pub(crate) mod utils;
 
 #[cfg(test)]
 mod tests {

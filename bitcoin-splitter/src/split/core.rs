@@ -1,9 +1,12 @@
 //! Module containing the logic of splitting the script into smaller parts
 
+use std::panic;
+
 use bitcoin::{
-    opcodes::all::{OP_ENDIF, OP_IF},
+    opcodes::all::{OP_ENDIF, OP_IF, OP_NOTIF},
     script::Instruction,
 };
+use indicatif::ProgressBar;
 
 use super::script::SplitResult;
 use crate::{split::intermediate_state::IntermediateState, treepp::*};
@@ -15,22 +18,36 @@ use crate::{split::intermediate_state::IntermediateState, treepp::*};
 /// that will be used to split the script and the algorithm
 /// will try to keep the size of the script as close to the optimal
 /// as possible.
-pub(super) const OPTIMAL_SCRIPT_SIZE: usize = 20000;
+pub(super) const DEFAULT_SCRIPT_SIZE: usize = 7000;
 
 /// Maximum scriptsize in bytes that is allowed by the Bitcoin network
 pub(super) const MAX_SCRIPT_SIZE: usize = 50000;
+
+/// When dealing with BitVM2 Disprove transaction,
+/// there are two factors that we need to consider:
+/// 1. The chunk (shard) script size.
+/// 2. The intermediate state size.
+///
+/// The total size of the disprove script is (approximately):
+/// `shard_size_i + (z_i_size + z_(i-1)_size) * STACK_SIZE_INDEX`
+///
+/// The `STACK_SIZE_INDEX` is the factor of how much intermediate states
+/// are contributing to the total size of the script.
+pub(super) const STACK_SIZE_INDEX: usize = 1000;
 
 /// Type of the split that we are going to use
 ///
 /// - [`SplitType::ByInstructions`]- splits the script by the number of instructions
 /// - [`SplitType::ByBytes`] - splits the script by the number of bytes
+#[derive(Debug, Clone, Copy, Default)]
 pub enum SplitType {
+    #[default]
     ByInstructions,
     ByBytes,
 }
 
 /// Splits the given script into smaller parts. Tries to keep each chunk size
-/// to the optimal size ([`OPTIMAL_SCRIPT_SIZE`]) as close as possible.
+/// to the optimal size `chunk_size` as close as possible.
 pub(super) fn split_into_shards(
     script: &Script,
     chunk_size: usize,
@@ -63,7 +80,7 @@ pub(super) fn split_into_shards(
         // Checking if the current instruction is OP_IF or OP_ENDIF
         if let Instruction::Op(op) = instruction {
             match op {
-                OP_IF => {
+                OP_IF | OP_NOTIF => {
                     if_count += 1;
                 }
                 OP_ENDIF => {
@@ -77,6 +94,8 @@ pub(super) fn split_into_shards(
         // is the same, we need to create a new one
         if current_shard_size >= chunk_size && if_count == endif_count {
             shards.push(Script::new());
+            if_count = 0;
+            endif_count = 0;
         }
 
         // Checking that the total size has not exceeded the maximum size
@@ -89,14 +108,65 @@ pub(super) fn split_into_shards(
     shards
 }
 
+/// Fuzzy split of the script into smaller parts by searching for the optimal size
+/// by checking various script sizes
+pub(super) fn fuzzy_split(input: Script, script: Script, split_type: SplitType) -> SplitResult {
+    // Define the limits
+    const MIN_CHUNK_SIZE: usize = 100;
+    const MAX_CHUNK_SIZE: usize = MAX_SCRIPT_SIZE;
+    const STEP_SIZE: usize = 20;
+
+    // Defining the final result
+    let mut resultant_split = SplitResult::new(vec![], vec![]);
+    let mut resultant_complexity = usize::MAX;
+
+    // Now, displaying the progress bar
+    let total_progress = (MAX_CHUNK_SIZE - MIN_CHUNK_SIZE) / STEP_SIZE;
+    let bar = ProgressBar::new(total_progress as u64);
+
+    // Trying to find the optimal size of the chunk by checking
+    // each size from MIN_CHUNK_SIZE to MAX_CHUNK_SIZE
+    for chunk_size in (MIN_CHUNK_SIZE..MAX_CHUNK_SIZE).step_by(STEP_SIZE) {
+        // Incrementing the progress bar
+        bar.inc(1);
+        // We are using panic::catch_unwind to catch any panics that might occur
+        // during the splitting process. If a panic occurs, we just skip the current
+        // chunk size and continue with the next one.
+        let current_split_result = panic::catch_unwind(|| {
+            naive_split(input.clone(), script.clone(), split_type, chunk_size)
+        });
+        if let Ok(split_result) = current_split_result {
+            let current_complexity = split_result.complexity_index();
+
+            if current_complexity < resultant_complexity {
+                resultant_complexity = current_complexity;
+                resultant_split = split_result;
+            }
+        }
+    }
+
+    bar.finish();
+    resultant_split
+}
+
+/// Default split of the script into smaller parts with the hard-coded optimal size
+pub(super) fn default_split(input: Script, script: Script, split_type: SplitType) -> SplitResult {
+    naive_split(input, script, split_type, DEFAULT_SCRIPT_SIZE)
+}
+
 /// Naive split of the script into smaller parts. It works as follows:
 /// 1. We split the script into smaller parts
 /// 2. We execute each shard with the input
 /// 3. Save intermediate results
 /// 4. Return all the shards and intermediate results in the form of [`SplitResult`]
-pub(super) fn naive_split(input: Script, script: Script, split_type: SplitType) -> SplitResult {
+pub(super) fn naive_split(
+    input: Script,
+    script: Script,
+    split_type: SplitType,
+    chunk_size: usize,
+) -> SplitResult {
     // First, we split the script into smaller parts
-    let shards = split_into_shards(&script, OPTIMAL_SCRIPT_SIZE, split_type);
+    let shards = split_into_shards(&script, chunk_size, split_type);
     let mut intermediate_states: Vec<IntermediateState> = vec![];
 
     // Then, we do the following steps:

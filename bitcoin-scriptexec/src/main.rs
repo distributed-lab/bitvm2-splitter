@@ -81,7 +81,8 @@ fn inner_main() -> Result<(), String> {
                     stats: Some(exec.stats()),
                 };
                 serde_json::to_writer(&out, &step).expect("I/O error");
-                out.write_all('\n'.to_string().as_bytes()).expect("I/O error");
+                out.write_all('\n'.to_string().as_bytes())
+                    .expect("I/O error");
             } else {
                 println!(
                     "Remaining script: {}",
@@ -119,7 +120,7 @@ fn inner_main() -> Result<(), String> {
         println!("Stats:\n{:#?}", exec.stats());
         println!("Time elapsed: {}ms", start.elapsed().as_millis());
     }
-	
+
     Ok(())
 }
 

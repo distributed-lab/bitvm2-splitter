@@ -8,7 +8,7 @@ use crate::{
     treepp::*,
 };
 
-use rand::RngCore;
+use rand::{Rng, RngCore};
 use sha2::{Digest, Sha256};
 
 /// Script that performs the addition of two 254-bit numbers
@@ -44,6 +44,30 @@ impl<const INPUT_SIZE: usize> SplitableScript<INPUT_SIZE, { OUTPUT_SIZE }>
             },
         }
     }
+
+    fn generate_invalid_io_pair() -> IOPair<INPUT_SIZE, { OUTPUT_SIZE }> {
+        // Generate a random array of bytes
+        let mut data = [0; INPUT_SIZE];
+        rand::thread_rng().fill_bytes(&mut data);
+        let data_hex = hex::encode(data);
+
+        // Creating a SHA-256 hasher and find digest of the data
+        let mut hasher = Sha256::new();
+        hasher.update(data);
+        let mut result = hasher.finalize();
+        // Flipping a random bit in the result
+        let bit_to_flip = rand::thread_rng().gen_range(0..result.len());
+        result[bit_to_flip] ^= 1;
+
+        IOPair {
+            input: script! {
+                { push_bytes_hex(data_hex.as_str()) }
+            },
+            output: script! {
+                { push_bytes_hex(hex::encode(result).as_str()) }
+            },
+        }
+    }
 }
 
 #[cfg(test)]
@@ -55,13 +79,16 @@ mod tests {
     #[test]
     fn test_sha256_verify() {
         const TEST_BYTES_NUM: usize = 80;
-        assert!(SHA256Script::<TEST_BYTES_NUM>::verify_random());
+        assert!(
+            SHA256Script::<TEST_BYTES_NUM>::verify_random(),
+            "Random verification failed"
+        );
     }
 
     #[test]
     fn test_naive_split_correctness() {
         // Choosing the number of bytes for the test
-        const TEST_BYTES_NUM: usize = 80;
+        const TEST_BYTES_NUM: usize = 180;
         type SHA256ScriptType = SHA256Script<TEST_BYTES_NUM>;
 
         // Generating a random valid input for the script and the script itself
@@ -72,7 +99,8 @@ mod tests {
         );
 
         // Splitting the script into shards
-        let split_result = SHA256ScriptType::split(input.clone(), SplitType::ByInstructions);
+        let split_result =
+            SHA256ScriptType::default_split(input.clone(), SplitType::ByInstructions);
 
         // Now, we are going to concatenate all the shards and verify that the script is also correct
         let verification_script = script! {
@@ -99,14 +127,14 @@ mod tests {
     #[test]
     fn test_naive_split() {
         // Choosing the number of bytes for the test
-        const TEST_BYTES_NUM: usize = 80;
+        const TEST_BYTES_NUM: usize = 120;
         type SHA256ScriptType = SHA256Script<TEST_BYTES_NUM>;
 
         // First, we generate the pair of input and output scripts
         let IOPair { input, output } = SHA256ScriptType::generate_valid_io_pair();
 
         // Splitting the script into shards
-        let split_result = SHA256ScriptType::split(input, SplitType::ByInstructions);
+        let split_result = SHA256ScriptType::default_split(input, SplitType::ByInstructions);
         println!("Split result: {:?}", split_result);
 
         // Checking the last state (which must be equal to the result of the multiplication)

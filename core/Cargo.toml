@@ -1,5 +1,5 @@
 [package]
-name    = "bitcoin-splitter"
+name    = "bitvm2-core"
 version = "0.1.0"
 edition = "2021"
 
@@ -12,6 +12,8 @@ bitcoin-script-stack = { git = "https://github.com/FairgateLabs/rust-bitcoin-scr
 
 # BitVM scripts
 bitcoin-window-mul = { git = "https://github.com/distributed-lab/bitcoin-window-mul.git" }
+bitcoin-winternitz = { path = "../bitcoin-winternitz" }
+bitcoin-splitter = { path = "../bitcoin-splitter" }
 
 # General-purpose libraries
 strum          = "0.26"
@@ -28,7 +30,8 @@ num-bigint = { version = "0.4.4", features = ["rand"] }
 num-traits = "0.2.18"
 
 # Random libraries
+rand        = { version = "0.8.5", default-features = false, features = ["min_const_gen", "small_rng"] }
 rand_chacha = "0.3.1"
-rand        = "0.8.5"
 ark-std     = "0.4.0"
 konst       = "0.3.9"
+

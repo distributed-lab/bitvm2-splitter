@@ -49,6 +49,27 @@ impl SplitableScript<{ INPUT_SIZE }, { OUTPUT_SIZE }> for U254AddScript {
             output: U254::OP_PUSH_U32LESLICE(&sum.to_u32_digits()),
         }
     }
+
+    fn generate_invalid_io_pair() -> IOPair<{ INPUT_SIZE }, { OUTPUT_SIZE }> {
+        let mut prng = ChaCha20Rng::seed_from_u64(0);
+
+        // Generate two random 254-bit numbers and calculate their sum
+        let num_1: BigUint = prng.sample(RandomBits::new(254));
+        let num_2: BigUint = prng.sample(RandomBits::new(254));
+        let mut sum: BigUint = (num_1.clone() + num_2.clone()).rem(BigUint::one().shl(254));
+
+        // Flip a random bit in the sum
+        let bit_to_flip = prng.gen_range(0..sum.bits());
+        sum.set_bit(bit_to_flip, !sum.bit(bit_to_flip));
+
+        IOPair {
+            input: script! {
+                { U254::OP_PUSH_U32LESLICE(&num_1.to_u32_digits()) }
+                { U254::OP_PUSH_U32LESLICE(&num_2.to_u32_digits()) }
+            },
+            output: U254::OP_PUSH_U32LESLICE(&sum.to_u32_digits()),
+        }
+    }
 }
 
 #[cfg(test)]
@@ -74,7 +95,7 @@ mod tests {
         );
 
         // Splitting the script into shards
-        let split_result = U254AddScript::split(input.clone(), SplitType::ByInstructions);
+        let split_result = U254AddScript::default_split(input.clone(), SplitType::ByInstructions);
 
         // Now, we are going to concatenate all the shards and verify that the script is also correct
         let verification_script = script! {
@@ -104,7 +125,7 @@ mod tests {
         let IOPair { input, output } = U254AddScript::generate_valid_io_pair();
 
         // Splitting the script into shards
-        let split_result = U254AddScript::split(input, SplitType::ByInstructions);
+        let split_result = U254AddScript::default_split(input, SplitType::ByInstructions);
 
         // Checking the last state (which must be equal to the result of the multiplication)
         let last_state = split_result.must_last_state();

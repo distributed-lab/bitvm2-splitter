@@ -1,12 +1,17 @@
 [workspace]
-members = ["bitcoin-splitter", "integration-tests", "bitcoin-scriptexec"]
+members = [
+	"bitcoin-splitter",
+	"integration-tests",
+	"bitcoin-winternitz",
+	"bitcoin-scriptexec",
+  "core"
+]
 resolver = "2"
 
 [workspace.dependencies]
-bitcoin = { git = "https://github.com/rust-bitcoin/rust-bitcoin", branch = "bitvm" }
+bitcoin = { git = "https://github.com/rust-bitcoin/rust-bitcoin", branch = "bitvm", features = ["rand-std"]}
 tracing = "0.1.40"
 tracing-subscriber = "0.3.18"
-
 
 [profile.dev]
 opt-level = 3
