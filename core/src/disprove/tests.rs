@@ -5,7 +5,11 @@ use bitcoin_splitter::split::{
     intermediate_state::IntermediateState,
     script::{IOPair, SplitableScript},
 };
-use bitcoin_testscripts::{bitvm::bn254::{fp254impl::Fp254Impl, fq::Fq}, int_mul_windowed::U254MulScript, square_fibonacci::SquareFibonacciScript};
+use bitcoin_testscripts::{
+    bitvm::bn254::{fp254impl::Fp254Impl, fq::Fq},
+    int_mul_windowed::U254MulScript,
+    square_fibonacci::SquareFibonacciScript,
+};
 use bitcoin_utils::stack_to_script;
 use bitcoin_utils::{comparison::OP_LONGEQUALVERIFY, treepp::*};
 use bitcoin_window_mul::{bigint::U508, traits::comparable::Comparable};
@@ -356,7 +360,8 @@ pub fn test_disprove_script_fibonacci_script_invalid_input() {
     let IOPair { input, output } = SquareFibonacciScript::<STEPS>::generate_invalid_io_pair();
 
     // Splitting the script into shards
-    let split_result = SquareFibonacciScript::<STEPS>::default_split(input, SplitType::ByInstructions);
+    let split_result =
+        SquareFibonacciScript::<STEPS>::default_split(input, SplitType::ByInstructions);
 
     // Checking the last state (which must be equal to the result of the multiplication)
     let last_state = split_result.must_last_state();
@@ -399,10 +404,11 @@ pub fn test_disprove_script_fibonacci_script_valid_input() {
     let IOPair { input, output: _ } = SquareFibonacciScript::<STEPS>::generate_valid_io_pair();
 
     // Splitting the script into shards
-    let split_result = SquareFibonacciScript::<STEPS>::default_split(input, SplitType::ByInstructions);
+    let split_result =
+        SquareFibonacciScript::<STEPS>::default_split(input, SplitType::ByInstructions);
 
     // Now, we form the disprove script for each shard
-    for i in 0..(split_result.shards.len()-1) {
+    for i in 0..(split_result.shards.len() - 1) {
         let disprove_script = DisproveScript::new(
             &split_result.intermediate_states[i],
             &split_result.intermediate_states[i + 1],
