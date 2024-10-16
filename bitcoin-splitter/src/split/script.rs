@@ -135,6 +135,12 @@ pub trait SplitableScript<const INPUT_SIZE: usize, const OUTPUT_SIZE: usize> {
     /// Generates a random valid input for the script
     fn generate_valid_io_pair() -> IOPair<INPUT_SIZE, OUTPUT_SIZE>;
 
+    /// Genreates invalid input for the script
+    ///
+    /// NOTE: This function is used for testing purposes, specifically
+    /// for testing the **Disprove** script.
+    fn generate_invalid_io_pair() -> IOPair<INPUT_SIZE, OUTPUT_SIZE>;
+
     /// Verifies that the input is valid for the script
     fn verify(input: Script, output: Script) -> bool {
         let script = script! {

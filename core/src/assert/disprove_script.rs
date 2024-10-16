@@ -1,5 +1,5 @@
 use super::signing::SignedIntermediateState;
-use crate::{treepp::*, utils::OP_LONGEQUALVERIFY};
+use crate::{treepp::*, utils::OP_LONGNOTEQUAL};
 
 use bitcoin_splitter::split::{
     core::SplitType, intermediate_state::IntermediateState, script::SplitableScript,
@@ -81,15 +81,22 @@ impl DisproveScript {
 
             // 3. Checking if z[i+1] == f(z[i])
             // 3.1. Mainstack verification
-            { OP_LONGEQUALVERIFY(to_signed.stack.len()) }
+            { OP_LONGNOTEQUAL(to_signed.stack.len()) }
 
             // 3.2. Altstack verification
             for _ in 0..to_signed.altstack.len() {
                 OP_FROMALTSTACK
             }
-            { OP_LONGEQUALVERIFY(to_signed.altstack.len()) }
 
-            OP_TRUE
+            // Since currently our stack looks like:
+            // { f[i](z[i]).altstack, {bit}, z[i+1].altstack, },
+            // we need to push f[i](z[i]).altstack to the top of the stack
+            for _ in 0..to_signed.altstack.len() {
+                { 2*to_signed.altstack.len() } OP_ROLL
+            }
+
+            { OP_LONGNOTEQUAL(to_signed.altstack.len()) }
+            OP_BOOLOR
         };
 
         Self {

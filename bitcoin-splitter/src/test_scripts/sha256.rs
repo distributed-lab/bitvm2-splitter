@@ -8,7 +8,7 @@ use crate::{
     treepp::*,
 };
 
-use rand::RngCore;
+use rand::{Rng, RngCore};
 use sha2::{Digest, Sha256};
 
 /// Script that performs the addition of two 254-bit numbers
@@ -34,6 +34,30 @@ impl<const INPUT_SIZE: usize> SplitableScript<INPUT_SIZE, { OUTPUT_SIZE }>
         let mut hasher = Sha256::new();
         hasher.update(data);
         let result = hasher.finalize();
+
+        IOPair {
+            input: script! {
+                { push_bytes_hex(data_hex.as_str()) }
+            },
+            output: script! {
+                { push_bytes_hex(hex::encode(result).as_str()) }
+            },
+        }
+    }
+
+    fn generate_invalid_io_pair() -> IOPair<INPUT_SIZE, { OUTPUT_SIZE }> {
+        // Generate a random array of bytes
+        let mut data = [0; INPUT_SIZE];
+        rand::thread_rng().fill_bytes(&mut data);
+        let data_hex = hex::encode(data);
+
+        // Creating a SHA-256 hasher and find digest of the data
+        let mut hasher = Sha256::new();
+        hasher.update(data);
+        let mut result = hasher.finalize();
+        // Flipping a random bit in the result
+        let bit_to_flip = rand::thread_rng().gen_range(0..result.len());
+        result[bit_to_flip] ^= 1;
 
         IOPair {
             input: script! {

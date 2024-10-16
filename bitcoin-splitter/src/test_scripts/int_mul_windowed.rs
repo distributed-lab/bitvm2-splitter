@@ -44,6 +44,27 @@ impl SplitableScript<{ INPUT_SIZE }, { OUTPUT_SIZE }> for U254MulScript {
             output: U508::OP_PUSH_U32LESLICE(&product.to_u32_digits()),
         }
     }
+
+    fn generate_invalid_io_pair() -> IOPair<{ INPUT_SIZE }, { OUTPUT_SIZE }> {
+        let mut prng = ChaCha20Rng::seed_from_u64(0);
+
+        // Generate two random 254-bit numbers and calculate their sum
+        let num_1: BigUint = prng.sample(RandomBits::new(254));
+        let num_2: BigUint = prng.sample(RandomBits::new(254));
+        let mut product: BigUint = num_1.clone() * num_2.clone();
+
+        // Flip a random bit in the product
+        let bit_to_flip = prng.gen_range(0..product.bits());
+        product.set_bit(bit_to_flip, !product.bit(bit_to_flip));
+
+        IOPair {
+            input: script! {
+                { U254Windowed::OP_PUSH_U32LESLICE(&num_1.to_u32_digits()) }
+                { U254Windowed::OP_PUSH_U32LESLICE(&num_2.to_u32_digits()) }
+            },
+            output: U508::OP_PUSH_U32LESLICE(&product.to_u32_digits()),
+        }
+    }
 }
 
 #[cfg(test)]
@@ -55,6 +76,15 @@ mod tests {
     #[test]
     fn test_verify() {
         assert!(U254MulScript::verify_random());
+    }
+
+    #[test]
+    fn test_invalid_generate() {
+        let IOPair { input, output } = U254MulScript::generate_invalid_io_pair();
+        assert!(
+            !U254MulScript::verify(input.clone(), output.clone()),
+            "input/output is correct"
+        );
     }
 
     #[test]

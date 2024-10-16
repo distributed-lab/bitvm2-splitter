@@ -129,11 +129,46 @@ pub fn test_stack_sign_and_verify_bigint() {
 }
 
 #[test]
-pub fn test_trivial_disprove_script() {
+pub fn test_trivial_disprove_script_success() {
     // Define the following setup:
     // Transition function: OP_ADD
     // From: {3, 4}
-    // To:   {7}
+    // To:   Should be { 7 }, but we have { 8 }
+    let state_from = IntermediateState::from_input_script(
+        &script! {},
+        &script! {
+            OP_3 OP_4
+        },
+    );
+    let state_to = IntermediateState::from_input_script(
+        &script! {},
+        &script! {
+            OP_8
+        },
+    );
+    let function = script! {
+        OP_ADD
+    };
+
+    // Now, form the disprove script
+    let disprove_script = DisproveScript::new(&state_from, &state_to, &function);
+
+    // Check that witness + verification scripts are satisfied
+    let verify_script = script! {
+        { disprove_script.script_witness }
+        { disprove_script.script_pubkey }
+    };
+
+    let result = execute_script(verify_script);
+    assert!(result.success, "Verification failed");
+}
+
+#[test]
+pub fn test_trivial_disprove_script_should_fail() {
+    // Define the following setup:
+    // Transition function: OP_ADD
+    // From: {3, 4}
+    // To:   Should be { 7 }, but we have { 8 }
     let state_from = IntermediateState::from_input_script(
         &script! {},
         &script! {
@@ -160,12 +195,12 @@ pub fn test_trivial_disprove_script() {
     };
 
     let result = execute_script(verify_script);
-
-    assert!(result.success, "Verification failed");
+    println!("{:?}", stack_to_script(&result.main_stack).to_asm_string());
+    assert!(!result.success, "Verification failed");
 }
 
 #[test]
-pub fn test_disprove_script_with_altstack_1() {
+pub fn test_disprove_script_with_altstack_should_fail() {
     // Define the following setup:
     // Transition function: {OP_ADD OP_TOALTSTACK OP_TOALTSTACK}
     // From: { mainstack: { 1, 2, 3, 4, 5 }, altstack: { } }
@@ -180,6 +215,42 @@ pub fn test_disprove_script_with_altstack_1() {
         &script! {},
         &script! {
             OP_1 OP_2 OP_9 OP_TOALTSTACK OP_3 OP_TOALTSTACK
+        },
+    );
+    let function = script! {
+        OP_ADD OP_TOALTSTACK OP_TOALTSTACK
+    };
+
+    // Now, form the disprove script
+    let disprove_script = DisproveScript::new(&state_from, &state_to, &function);
+
+    // Check that witness + verification scripts are satisfied
+    let verify_script = script! {
+        { disprove_script.script_witness }
+        { disprove_script.script_pubkey }
+    };
+
+    let result = execute_script(verify_script);
+
+    assert!(!result.success, "Verification failed");
+}
+
+#[test]
+pub fn test_disprove_script_with_altstack_success() {
+    // Define the following setup:
+    // Transition function: {OP_ADD OP_TOALTSTACK OP_TOALTSTACK}
+    // From: { mainstack: { 1, 2, 3, 4, 5 }, altstack: { } }
+    // To:   { mainstack: { 1, 2 }, altstack: { 9, 3 } }
+    let state_from = IntermediateState::from_input_script(
+        &script! {},
+        &script! {
+            OP_1 OP_2 OP_3 OP_4 OP_5
+        },
+    );
+    let state_to = IntermediateState::from_input_script(
+        &script! {},
+        &script! {
+            OP_10 OP_2 OP_9 OP_TOALTSTACK OP_3 OP_TOALTSTACK
         },
     );
     let function = script! {
@@ -233,22 +304,19 @@ pub fn test_disprove_script_with_altstack_2() {
 
     let result = execute_script(verify_script);
 
-    assert!(result.success, "Verification failed");
+    assert!(!result.success, "Verification failed");
 }
 
 #[test]
 pub fn test_disprove_script_mul_script() {
     // First, we generate the pair of input and output scripts
-    let IOPair { input, output } = U254MulScript::generate_valid_io_pair();
+    let IOPair { input, output } = U254MulScript::generate_invalid_io_pair();
 
     // Splitting the script into shards
     let split_result = U254MulScript::default_split(input, SplitType::ByInstructions);
 
     // Checking the last state (which must be equal to the result of the multiplication)
     let last_state = split_result.must_last_state();
-
-    // Altstack must be empty
-    assert!(last_state.altstack.is_empty(), "altstack is not empty!");
 
     // The element of the mainstack must be equal to the actual output
     let verification_script = script! {
@@ -258,7 +326,7 @@ pub fn test_disprove_script_mul_script() {
     };
 
     let result = execute_script(verification_script);
-    assert!(result.success, "verification has failed");
+    assert!(!result.success, "verification has failed");
 
     // Now, we form the disprove script for each shard
     for i in 0..(split_result.shards.len() - 1) {
@@ -275,7 +343,7 @@ pub fn test_disprove_script_mul_script() {
         };
 
         let result = execute_script(verify_script);
-        assert!(result.success, "Verification {:?} failed", i + 1);
+        assert!(!result.success, "Verification {:?} failed", i + 1);
     }
 }
 
@@ -292,7 +360,7 @@ pub fn test_disprove_script_batch_correctness() {
     >(input.clone());
 
     // Now, we form the disprove script for each shard
-    for (i,disprove_script) in disprove_scripts.into_iter().enumerate() {
+    for (i, disprove_script) in disprove_scripts.into_iter().enumerate() {
         // Check that witness + verification scripts are satisfied
         let verify_script = script! {
             { disprove_script.script_witness }
@@ -300,6 +368,6 @@ pub fn test_disprove_script_batch_correctness() {
         };
 
         let result = execute_script(verify_script);
-        assert!(result.success, "Verification {:?} failed", i + 1);
+        assert!(!result.success, "Verification {:?} failed", i + 1);
     }
 }
