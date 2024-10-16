@@ -1,9 +1,14 @@
-use super::signing::SignedIntermediateState;
 use crate::{treepp::*, utils::OP_LONGNOTEQUAL};
+use signing::SignedIntermediateState;
 
 use bitcoin_splitter::split::{
     core::SplitType, intermediate_state::IntermediateState, script::SplitableScript,
 };
+
+pub mod signing;
+
+#[cfg(test)]
+mod tests;
 
 /// Script letting challengers spend the **Assert** transaction
 /// output if the operator computated substates incorrectly.
@@ -138,3 +143,4 @@ pub fn form_disprove_scripts<const I: usize, const O: usize, S: SplitableScript<
         })
         .collect()
 }
+

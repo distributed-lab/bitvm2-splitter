@@ -1,4 +1,4 @@
-use crate::{assert::disprove_script::DisproveScript, treepp::*, utils::OP_LONGEQUALVERIFY};
+use crate::{disprove::DisproveScript, treepp::*, utils::OP_LONGEQUALVERIFY};
 use bitcoin_splitter::{
     split::{
         core::SplitType,
@@ -10,7 +10,7 @@ use bitcoin_splitter::{
 };
 use bitcoin_window_mul::{bigint::U508, traits::comparable::Comparable};
 
-use super::{disprove_script::form_disprove_scripts, signing::SignedIntermediateState};
+use super::{form_disprove_scripts, signing::SignedIntermediateState};
 
 #[test]
 pub fn test_stack_sign_and_verify() {
