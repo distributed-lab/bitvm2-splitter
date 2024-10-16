@@ -162,11 +162,21 @@ pub fn naive_split(
     split_type: SplitType,
     chunk_size: usize,
 ) -> SplitResult {
-    // First, we split the script into smaller parts
     let shards = split_into_shards(&script, chunk_size, split_type);
+    let intermediate_states: Vec<IntermediateState> =
+        form_states_from_shards(shards.clone(), input);
+
+    SplitResult {
+        shards,
+        intermediate_states,
+    }
+}
+
+/// Given an array of shards and input, creates the vector of intermediate states
+pub fn form_states_from_shards(shards: Vec<Script>, input: Script) -> Vec<IntermediateState> {
     let mut intermediate_states: Vec<IntermediateState> = vec![];
 
-    // Then, we do the following steps:
+    // We do the following steps:
     // 1. We execute the first script with the input
     // 2. We take the stack and write it to the intermediate results
     // 3. We execute the second script with the saved intermediate results
@@ -192,8 +202,5 @@ pub fn naive_split(
         "Intermediate results should be the same as the number of scripts"
     );
 
-    SplitResult {
-        shards,
-        intermediate_states,
-    }
+    intermediate_states
 }
