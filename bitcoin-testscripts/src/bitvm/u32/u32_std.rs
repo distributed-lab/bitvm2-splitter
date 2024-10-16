@@ -1,8 +1,8 @@
 #![allow(dead_code)]
 
-use crate::pseudo::{push_to_stack, OP_256MUL, OP_4DUP};
+use bitcoin_utils::pseudo::{push_to_stack, OP_256MUL, OP_4DUP};
 
-use crate::treepp::*;
+use bitcoin_utils::treepp::*;
 
 /// Pushes a value as u32 element onto the stack
 pub fn u32_push(value: u32) -> Script {
@@ -163,8 +163,8 @@ pub fn u32_compress() -> Script {
 #[cfg(test)]
 mod test {
     use crate::bitvm::u32::u32_std::*;
-    use crate::debug::run_and_assert;
-    use crate::treepp::script;
+    use bitcoin_utils::debug::run_and_assert;
+    use bitcoin_utils::treepp::script;
 
     #[test]
     fn test_u32_push() {

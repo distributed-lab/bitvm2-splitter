@@ -1,4 +1,4 @@
-use crate::treepp::*;
+use bitcoin_utils::treepp::*;
 
 use bitcoin_splitter::split::intermediate_state::IntermediateState;
 use bitcoin_winternitz::u32::{checksig_verify_script, Message, PublicKey, SecretKey, Signature};

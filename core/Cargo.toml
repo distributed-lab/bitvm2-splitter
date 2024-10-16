@@ -15,6 +15,7 @@ bitcoin-window-mul  = { git = "https://github.com/distributed-lab/bitcoin-window
 bitcoin-winternitz  = { path = "../bitcoin-winternitz" }
 bitcoin-splitter    = { path = "../bitcoin-splitter" }
 bitcoin-testscripts = { path = "../bitcoin-testscripts" }
+bitcoin-utils       = { path = "../bitcoin-utils" }
 
 # General-purpose libraries
 strum          = "0.26"

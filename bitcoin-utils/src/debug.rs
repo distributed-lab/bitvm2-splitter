@@ -48,8 +48,10 @@ pub fn execute_script(script: ScriptBuf) -> ExecuteInfo {
     let mut exec = Exec::new(
         ExecCtx::Tapscript,
         Options {
-            // TODO: Figure our how to optimize stack_to_script function to avoid disabling require_minimal
+            // TODO(ZamDimon): Figure our how to optimize stack_to_script function to avoid disabling require_minimal
+            // TODO(ZamDimon): Currently, Winternitz does not work with the stack limit
             require_minimal: false,
+            enforce_stack_limit: false,
             ..Default::default()
         },
         TxTemplate {

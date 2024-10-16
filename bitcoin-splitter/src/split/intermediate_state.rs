@@ -3,8 +3,8 @@
 
 use core::fmt;
 
-use crate::{treepp::*, utils::stack_to_script};
 use bitcoin_scriptexec::Stack;
+use bitcoin_utils::{stack_to_script, treepp::*};
 
 /// Structure that represents the intermediate state.
 /// It contains the stack and altstack after the execution of the

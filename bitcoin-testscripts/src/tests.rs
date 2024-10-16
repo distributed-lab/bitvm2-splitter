@@ -1,8 +1,10 @@
-use crate::treepp::*;
-use bitcoin_splitter::split::{core::{split_into_shards, SplitType}, script::{IOPair, SplitableScript}};
+use bitcoin_splitter::split::{
+    core::{split_into_shards, SplitType},
+    script::{IOPair, SplitableScript},
+};
+use bitcoin_utils::treepp::*;
 
 use crate::int_mul_windowed::U254MulScript;
-
 
 /// Tests whether splitting the script into subprograms (shards)
 /// works properly for the most advanced script (two big integers multipication)

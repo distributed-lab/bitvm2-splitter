@@ -1,5 +1,5 @@
 use crate::bitvm::u32::u32_zip::{u32_copy_zip, u32_zip};
-use crate::treepp::*;
+use bitcoin_utils::treepp::*;
 
 pub fn u8_add_carry() -> Script {
     script! {
@@ -107,8 +107,8 @@ pub fn u32_add_drop(a: u32, b: u32) -> Script {
 mod test {
     use crate::bitvm::u32::u32_add::*;
     use crate::bitvm::u32::u32_std::u32_push;
-    use crate::debug::run_and_assert;
-    use crate::treepp::script;
+    use bitcoin_utils::debug::run_and_assert;
+    use bitcoin_utils::treepp::script;
 
     #[test]
     fn test_u32_add() {

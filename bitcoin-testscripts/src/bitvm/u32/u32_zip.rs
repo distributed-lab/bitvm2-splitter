@@ -1,5 +1,5 @@
 #![allow(dead_code)]
-use crate::treepp::*;
+use bitcoin_utils::treepp::*;
 
 /// Zip the top two u32 elements
 /// input:  a0 a1 a2 a3 b0 b1 b2 b3

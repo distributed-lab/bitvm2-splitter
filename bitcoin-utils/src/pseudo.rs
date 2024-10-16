@@ -4,7 +4,7 @@
 use crate::treepp::*;
 
 pub fn OP_CHECKSEQUENCEVERIFY() -> Script {
-    script! {OP_CSV}
+    script! { OP_CSV }
 }
 
 /// OP_4PICK

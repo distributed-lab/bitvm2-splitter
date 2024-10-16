@@ -2,10 +2,8 @@
 //! for performing the addition of two large integers
 //! (exceeding standard Bitcoin 31-bit integers)
 
-use bitcoin_splitter::{
-    split::script::{IOPair, SplitableScript},
-    treepp::*,
-};
+use bitcoin_splitter::split::script::{IOPair, SplitableScript};
+use bitcoin_utils::treepp::*;
 use bitcoin_window_mul::{
     bigint::U254,
     traits::{
@@ -77,7 +75,7 @@ mod tests {
     use bitcoin_splitter::split::core::SplitType;
     use bitcoin_window_mul::traits::comparable::Comparable;
 
-    use crate::utils::stack_to_script;
+    use bitcoin_utils::stack_to_script;
 
     use super::*;
 

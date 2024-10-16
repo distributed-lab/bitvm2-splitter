@@ -1,6 +1,6 @@
 #![allow(dead_code)]
 
-use crate::treepp::*;
+use bitcoin_utils::treepp::*;
 use core::panic;
 
 /// Right rotation of an u32 element by 16 bits
@@ -225,8 +225,8 @@ mod tests {
 
     use crate::bitvm::u32::u32_rrot::*;
     use crate::bitvm::u32::u32_std::*;
-    use crate::debug::run_and_assert;
-    use crate::treepp::script;
+    use bitcoin_utils::debug::run_and_assert;
+    use bitcoin_utils::treepp::script;
     use rand::Rng;
 
     fn rrot(x: u32, n: usize) -> u32 {

@@ -1,13 +1,13 @@
-use crate::{disprove::DisproveScript, treepp::*, utils::OP_LONGEQUALVERIFY};
-use bitcoin_splitter::{
-    split::{
-        core::SplitType,
-        intermediate_state::IntermediateState,
-        script::{IOPair, SplitableScript},
-    },
-    utils::stack_to_script,
+use crate::disprove::DisproveScript;
+
+use bitcoin_splitter::split::{
+    core::SplitType,
+    intermediate_state::IntermediateState,
+    script::{IOPair, SplitableScript},
 };
 use bitcoin_testscripts::int_mul_windowed::U254MulScript;
+use bitcoin_utils::stack_to_script;
+use bitcoin_utils::{comparison::OP_LONGEQUALVERIFY, treepp::*};
 use bitcoin_window_mul::{bigint::U508, traits::comparable::Comparable};
 
 use super::{form_disprove_scripts, signing::SignedIntermediateState};

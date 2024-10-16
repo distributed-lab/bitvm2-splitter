@@ -1,10 +1,6 @@
-use crate::{
-    split::core::SplitType,
-    treepp::*,
-    utils::stack_to_script,
-};
-
 use super::{core::split_into_shards, intermediate_state::IntermediateState};
+use crate::split::core::SplitType;
+use bitcoin_utils::{stack_to_script, treepp::*};
 
 /// Tests whether splitting the script into subprograms (shards)
 /// works properly for the most basic script

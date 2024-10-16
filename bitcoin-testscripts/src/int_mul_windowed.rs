@@ -2,8 +2,8 @@
 //! for performing the multiplication of two large integers
 //! (exceeding standard Bitcoin 31-bit integers)
 
-use crate::treepp::*;
 use bitcoin_splitter::split::script::{IOPair, SplitableScript};
+use bitcoin_utils::treepp::*;
 use bitcoin_window_mul::{
     bigint::{U254Windowed, U508},
     traits::integer::{NonNativeInteger, NonNativeLimbInteger},
@@ -68,8 +68,8 @@ impl SplitableScript<{ INPUT_SIZE }, { OUTPUT_SIZE }> for U254MulScript {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::utils::stack_to_script;
     use bitcoin_splitter::split::core::SplitType;
+    use bitcoin_utils::stack_to_script;
     use bitcoin_window_mul::traits::comparable::Comparable;
 
     #[test]

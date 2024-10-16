@@ -1,7 +1,7 @@
 #![allow(dead_code)]
 
 use crate::bitvm::u32::u32_zip::u32_copy_zip;
-use crate::treepp::*;
+use bitcoin_utils::treepp::*;
 
 /// Bitwise XOR of two u8 elements
 ///
@@ -341,8 +341,8 @@ mod tests {
 
     use crate::bitvm::u32::u32_std::*;
     use crate::bitvm::u32::u32_xor::{u32_xor, u8_drop_xor_table, u8_push_xor_table};
-    use crate::debug::run_and_assert;
-    use crate::treepp::*;
+    use bitcoin_utils::debug::run_and_assert;
+    use bitcoin_utils::treepp::*;
     use rand::Rng;
 
     fn xor(x: u32, y: u32) -> u32 {

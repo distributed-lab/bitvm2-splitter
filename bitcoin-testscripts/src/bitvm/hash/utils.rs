@@ -1,4 +1,4 @@
-use crate::treepp::*;
+use bitcoin_utils::treepp::*;
 
 pub fn push_bytes_hex(hex: &str) -> Script {
     let hex: String = hex

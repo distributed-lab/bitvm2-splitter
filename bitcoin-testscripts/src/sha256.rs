@@ -2,11 +2,9 @@
 //! for performing the multiplication of two large integers
 //! (exceeding standard Bitcoin 31-bit integers)
 
-use crate::{
-    bitvm::hash::{sha256::sha256, utils::push_bytes_hex},
-    treepp::*,
-};
+use crate::bitvm::hash::{sha256::sha256, utils::push_bytes_hex};
 use bitcoin_splitter::split::script::{IOPair, SplitableScript};
+use bitcoin_utils::treepp::*;
 
 use rand::{Rng, RngCore};
 use sha2::{Digest, Sha256};
@@ -74,7 +72,7 @@ impl<const INPUT_SIZE: usize> SplitableScript<INPUT_SIZE, { OUTPUT_SIZE }>
 mod tests {
     use bitcoin_splitter::split::core::SplitType;
 
-    use crate::utils::stack_to_script;
+    use bitcoin_utils::stack_to_script;
 
     use super::*;
 

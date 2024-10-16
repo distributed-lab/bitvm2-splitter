@@ -6,10 +6,11 @@ use bitcoin::{
     opcodes::all::{OP_ENDIF, OP_IF, OP_NOTIF},
     script::Instruction,
 };
+use bitcoin_utils::treepp::*;
 use indicatif::ProgressBar;
 
 use super::script::SplitResult;
-use crate::{split::intermediate_state::IntermediateState, treepp::*};
+use crate::split::intermediate_state::IntermediateState;
 
 /// Optimal size of the script in bytes
 ///
@@ -48,11 +49,7 @@ pub enum SplitType {
 
 /// Splits the given script into smaller parts. Tries to keep each chunk size
 /// to the optimal size `chunk_size` as close as possible.
-pub fn split_into_shards(
-    script: &Script,
-    chunk_size: usize,
-    split_type: SplitType,
-) -> Vec<Script> {
+pub fn split_into_shards(script: &Script, chunk_size: usize, split_type: SplitType) -> Vec<Script> {
     let instructions: Vec<Instruction> = script
         .instructions()
         .map(|instruction| instruction.expect("script is most likely corrupted"))
@@ -150,7 +147,7 @@ pub fn fuzzy_split(input: Script, script: Script, split_type: SplitType) -> Spli
 }
 
 /// Default split of the script into smaller parts with the hard-coded optimal size
-pub  fn default_split(input: Script, script: Script, split_type: SplitType) -> SplitResult {
+pub fn default_split(input: Script, script: Script, split_type: SplitType) -> SplitResult {
     naive_split(input, script, split_type, DEFAULT_SCRIPT_SIZE)
 }
 
