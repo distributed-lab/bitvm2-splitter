@@ -149,7 +149,7 @@ macro_rules! fp_lc_mul {
                     // Initialize the lookup table
                     fn init_table(window: u32) -> Script {
                         assert!(
-                            1 <= window && window <= 6,
+                            (1..=6).contains(&window),
                             "expected 1<=window<=6; got window={}",
                             window
                         );
@@ -947,90 +947,6 @@ mod test {
             println!(
                 "Fq::hinted_mul_by_constant: {} @ {} stack",
                 hinted_mul.len(),
-                max_stack
-            );
-        }
-    }
-
-    #[test]
-    fn test_hinted_mul_lc2() {
-        let mut prng: ChaCha20Rng = ChaCha20Rng::seed_from_u64(0);
-
-        let mut max_stack = 0;
-
-        for _ in 0..100 {
-            let a = ark_bn254::Fq::rand(&mut prng);
-            let b = ark_bn254::Fq::rand(&mut prng);
-            let c = ark_bn254::Fq::rand(&mut prng);
-            let d = ark_bn254::Fq::rand(&mut prng);
-            let e = a.mul(&c).add(b.mul(&d));
-
-            let (hinted_mul_lc2, hints) = Fq::hinted_mul_lc2(3, a, 2, b, 1, c, 0, d);
-
-            let script = script! {
-                for hint in hints {
-                    { hint.push() }
-                }
-                { fq_push_not_montgomery(a) }
-                { fq_push_not_montgomery(b) }
-                { fq_push_not_montgomery(c) }
-                { fq_push_not_montgomery(d) }
-                { hinted_mul_lc2.clone() }
-                { fq_push_not_montgomery(e) }
-                { Fq::equal(0, 1) }
-            };
-            let res = execute_script(script);
-            assert!(res.success);
-
-            max_stack = max_stack.max(res.stats.max_nb_stack_items);
-            println!(
-                "Fq::hinted_mul_lc2: {} @ {} stack",
-                hinted_mul_lc2.len(),
-                max_stack
-            );
-        }
-    }
-
-    #[test]
-    fn test_hinted_mul_lc2_keep_elements() {
-        let mut prng: ChaCha20Rng = ChaCha20Rng::seed_from_u64(0);
-
-        let mut max_stack = 0;
-
-        for _ in 0..100 {
-            let a = ark_bn254::Fq::rand(&mut prng);
-            let b = ark_bn254::Fq::rand(&mut prng);
-            let c = ark_bn254::Fq::rand(&mut prng);
-            let d = ark_bn254::Fq::rand(&mut prng);
-            let e = a.mul(&c).add(b.mul(&d));
-
-            let (hinted_mul_lc2, hints) = Fq::hinted_mul_lc2_keep_elements(3, a, 2, b, 1, c, 0, d);
-
-            let script = script! {
-                for hint in hints {
-                    { hint.push() }
-                }
-                { fq_push_not_montgomery(a) }
-                { fq_push_not_montgomery(b) }
-                { fq_push_not_montgomery(c) }
-                { fq_push_not_montgomery(d) }
-                { hinted_mul_lc2.clone() }
-                { fq_push_not_montgomery(e) }
-                { Fq::equal(0, 1) }
-                OP_TOALTSTACK
-                { Fq::drop() }
-                { Fq::drop() }
-                { Fq::drop() }
-                { Fq::drop() }
-                OP_FROMALTSTACK
-            };
-            let res = execute_script(script);
-            assert!(res.success);
-
-            max_stack = max_stack.max(res.stats.max_nb_stack_items);
-            println!(
-                "Fq::hinted_mul_lc2: {} @ {} stack",
-                hinted_mul_lc2.len(),
                 max_stack
             );
         }

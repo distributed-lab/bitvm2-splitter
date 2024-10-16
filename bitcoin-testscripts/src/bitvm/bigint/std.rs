@@ -1,5 +1,6 @@
 use num_bigint::BigUint;
 use num_traits::Num;
+use std::cmp::Ordering;
 use std::str::FromStr;
 
 use crate::bitvm::bigint::BigIntImpl;
@@ -22,8 +23,8 @@ impl<const N_BITS: u32, const LIMB_SIZE: u32> BigIntImpl<N_BITS, LIMB_SIZE> {
             chunk_vec.resize(LIMB_SIZE as usize, false);
 
             let mut elem = 0u32;
-            for i in 0..LIMB_SIZE as usize {
-                if chunk_vec[i] {
+            for (i, chunk) in chunk_vec.iter().enumerate().take(LIMB_SIZE as usize) {
+                if *chunk {
                     elem += 1 << i;
                 }
             }
@@ -266,23 +267,25 @@ impl<const N_BITS: u32, const LIMB_SIZE: u32> BigIntImpl<N_BITS, LIMB_SIZE> {
         let n_limbs_self = (N_BITS + LIMB_SIZE - 1) / LIMB_SIZE;
         let n_limbs_target = (T_BITS + LIMB_SIZE - 1) / LIMB_SIZE;
 
-        if n_limbs_target == n_limbs_self {
-            return script! {};
-        } else if n_limbs_target > n_limbs_self {
-            let n_limbs_to_add = n_limbs_target - n_limbs_self;
-            script! {
-                if n_limbs_to_add > 0 {
-                    {0} {bitcoin_utils::pseudo::OP_NDUP((n_limbs_to_add - 1) as usize)} // Pushing zeros to the stack
-                }
-                for _ in 0..n_limbs_self {
-                    { n_limbs_target - 1 } OP_ROLL
+        match n_limbs_target.cmp(&n_limbs_self) {
+            Ordering::Equal => script! {},
+            Ordering::Greater => {
+                let n_limbs_to_add = n_limbs_target - n_limbs_self;
+                script! {
+                    if n_limbs_to_add > 0 {
+                        {0} {bitcoin_utils::pseudo::OP_NDUP((n_limbs_to_add - 1) as usize)} // Pushing zeros to the stack
+                    }
+                    for _ in 0..n_limbs_self {
+                        { n_limbs_target - 1 } OP_ROLL
+                    }
                 }
             }
-        } else {
-            let n_limbs_to_remove = n_limbs_self - n_limbs_target;
-            script! {
-                for _ in 0..n_limbs_to_remove {
-                    { n_limbs_target } OP_ROLL OP_DROP
+            Ordering::Less => {
+                let n_limbs_to_remove = n_limbs_self - n_limbs_target;
+                script! {
+                    for _ in 0..n_limbs_to_remove {
+                        { n_limbs_target } OP_ROLL OP_DROP
+                    }
                 }
             }
         }

@@ -107,7 +107,7 @@ impl<const STEPS: usize> SplitableScript<{ INPUT_SIZE }, { OUTPUT_SIZE }>
 }
 
 /// Generates a random Fq element
-pub(self) fn generate_random_fq() -> BigUint {
+pub(super) fn generate_random_fq() -> BigUint {
     // Preparing modulus and random generator
     let modulus = BigUint::from_str_radix(Fq::MODULUS, 16).unwrap();
     let mut prng = ChaCha20Rng::seed_from_u64(0);
@@ -117,13 +117,13 @@ pub(self) fn generate_random_fq() -> BigUint {
 }
 
 /// Multiplies two Fq elements (by operating over [`BigUint`])
-pub(self) fn mul_fq(x: &BigUint, y: &BigUint) -> BigUint {
+pub(super) fn mul_fq(x: &BigUint, y: &BigUint) -> BigUint {
     let modulus = BigUint::from_str_radix(Fq::MODULUS, 16).unwrap();
     x.mul(y).rem(&modulus)
 }
 
 /// Squares the given Fq element
-pub(self) fn square_fq(x: &BigUint) -> BigUint {
+pub(super) fn square_fq(x: &BigUint) -> BigUint {
     mul_fq(x, x)
 }
 
