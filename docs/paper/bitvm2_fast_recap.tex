@@ -38,7 +38,7 @@
       xshift=20pt,
       yshift=-6.5pt,
     black]
-    at (frame.west) {Stack:};
+    at (frame.west) {Script:};
   }
 }
 
@@ -354,7 +354,7 @@ current implementation requires around 1000 bytes per 32-bit stack
 element, which is unfortunatly a lot. Parts of the public key make the
 largest contribution to the script size. Assuming that as $H$
 implementation uses \texttt{OP\_HASH160}, each part $(y_1,\dots,y_k)$
-of the public key $\mathsf{pk}_{m}$ adds 40 bytes to the total script
+of the public key $\mathsf{pk}_{m}$ adds 20 bytes to the total script
 size. Additionaly, for calculating a lookup table for signature
 verification, $2d \cdot k$ opcodes are used. Further more, for message
 recovery $2 \sum_{i = 0}^{n_0} i w$ number of opcodes are added
@@ -366,7 +366,7 @@ too. Also, note that:
 \end{equation}
 
 So the total script size, excluding utility opcodes, will be at least
-$40k + 2 d k + w n_0 (n_0+1)$ (the sizes for different $d$ can be seen
+$20k + 2 d k + w n_0 (n_0+1)$ (the sizes for different $d$ can be seen
 in table~\ref{tab:winternitz-script-size}).
 
 \iffalse{}
@@ -382,7 +382,7 @@ for d in ds:
     n1 = math.ceil((2**w * n0).bit_length() / w)
     k = n0 + n1
     
-    pk_size = 40 * k
+    pk_size = 20 * k
     ver_size = 2 * d * k
     rec_size = 0
     for i in range(0, n0):
@@ -400,13 +400,13 @@ for d in ds:
     $d$ & Public Key Size & Verification Script Size & Recovery
     Script Size & Total \\
     \midrule
-    3 & 800 & 120 & 240 & 1160 \\
-    7 & 560 & 196 & 165 & 921 \\
-    15 & 400 & 300 & 112 & 812 \\
-    31 & 360 & 558 & 105 & 1023 \\
-    63 & 320 & 1008 & 90 & 1418 \\
-    127 & 280 & 1778 & 70 & 2128 \\
-    255 & 240 & 3060 & 48 & 3348 \\
+    3 & 400 & 120 & 240 & 760 \\
+    7 & 280 & 196 & 165 & 641 \\
+    15 & 200 & 300 & 112 & 612 \\
+    31 & 180 & 558 & 105 & 843 \\
+    63 & 160 & 1008 & 90 & 1258 \\
+    127 & 140 & 1778 & 70 & 1988 \\
+    255 & 120 & 3060 & 48 & 3228 \\
     \bottomrule
   \end{tabular}
   \caption{Different script sizes depending on the $d$
