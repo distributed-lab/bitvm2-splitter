@@ -67,8 +67,8 @@ impl<const STEPS: usize> SplitableScript<{ INPUT_SIZE }, { OUTPUT_SIZE }>
 
     fn generate_valid_io_pair() -> IOPair<{ INPUT_SIZE }, { OUTPUT_SIZE }> {
         // Generating random Fq elements --- first two elements in the sequence
-        let x0: BigUint = generate_random_fq();
-        let x1: BigUint = generate_random_fq();
+        let x0 = generate_random_fq();
+        let x1 = generate_random_fq();
 
         // Finding the product of two field elements
         let result = Self::calculate_result(&x0, &x1);
@@ -83,12 +83,24 @@ impl<const STEPS: usize> SplitableScript<{ INPUT_SIZE }, { OUTPUT_SIZE }>
     }
 
     fn generate_invalid_io_pair() -> IOPair<{ INPUT_SIZE }, { OUTPUT_SIZE }> {
-        unimplemented!("not implemented yet")
+        // We will simply generate three random values to make the script invalid
+        let x0 = generate_random_fq();
+        let x1 = generate_random_fq();
+        let x2 = generate_random_fq();
+
+        IOPair {
+            input: script! {
+                { Fq::push_u32_le(&x0.to_u32_digits()) }
+                { Fq::push_u32_le(&x1.to_u32_digits()) }
+            },
+            output: Fq::push_u32_le(&x2.to_u32_digits()),
+        }
     }
 
     fn default_split(input: Script, _split_type: SplitType) -> SplitResult {
         // First, form shards
         let mut shards = vec![Self::transition_script(); STEPS + 1];
+        // Change last one to be { OP_ROLL, OP_DROP } to remove the element before last.
         if let Some(last) = shards.last_mut() {
             *last = script! {
                 { Fq::roll(1) }
@@ -96,9 +108,8 @@ impl<const STEPS: usize> SplitableScript<{ INPUT_SIZE }, { OUTPUT_SIZE }>
             }
         }
 
-        // Next, form intermediate states
+        // Secondly, form the intermediate states and return
         let intermediate_states = form_states_from_shards(shards.clone(), input);
-
         SplitResult {
             shards,
             intermediate_states,
@@ -148,9 +159,9 @@ mod tests {
         let modulus = BigUint::from_str_radix(Fq::MODULUS, 16).unwrap();
 
         // Generate random (x0, x1)
-        let x0: BigUint = generate_random_fq();
-        let x1: BigUint = generate_random_fq();
-        let x2: BigUint = x0.clone().mul(x0.clone()) + x1.clone().mul(x1.clone()).rem(modulus);
+        let x0 = generate_random_fq();
+        let x1 = generate_random_fq();
+        let x2 = x0.clone().mul(x0.clone()) + x1.clone().mul(x1.clone()).rem(modulus);
 
         // Construct the script
         let script = script! {
@@ -282,44 +293,5 @@ mod tests {
         // Now, we debug the total size of the states
         let total_size = split_result.total_states_size();
         println!("Total size of the states: {} bytes", total_size);
-    }
-
-    #[test]
-    #[ignore = "wip"]
-    fn test_to_u32_conversion() {
-        // First, we generate the pair of input and output scripts
-        let IOPair { input, output } = SquareFibonacciScript::<1024>::generate_valid_io_pair();
-
-        // Splitting the script into shards
-        let split_result =
-            SquareFibonacciScript::<1024>::default_split(input, SplitType::ByInstructions);
-
-        // Debugging the split result
-        println!("Split result: {:?}", split_result);
-
-        // Now, verifying tha the split is correct (meaning, the last state is equal to the output)
-        let last_state = split_result.must_last_state();
-
-        // Altstack must be empty
-        assert!(last_state.altstack.is_empty(), "altstack is not empty!");
-
-        // The element of the mainstack must be equal to the actual output
-        let verification_script = script! {
-            { stack_to_script(&last_state.stack) }
-            { output }
-            { Fq::equal(0, 1) }
-        };
-
-        let result = execute_script(verification_script);
-        assert!(result.success, "verification has failed");
-
-        // Now, let us debug each of the intermediate states
-        for (i, state) in split_result.intermediate_states.iter().enumerate() {
-            let state_as_bytes = state.stack.clone().serialize_to_bytes();
-
-            println!("Intermediate state #{}: {:?}", i, state);
-            println!("Intermediate state as bytes #{}: {:?}", i, state_as_bytes);
-            // println!("Intermediate state as u32 array #{}: {:?}", i, Stack::from_u8_vec(state_as_bytes));
-        }
     }
 }

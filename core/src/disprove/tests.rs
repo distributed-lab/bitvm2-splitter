@@ -5,7 +5,7 @@ use bitcoin_splitter::split::{
     intermediate_state::IntermediateState,
     script::{IOPair, SplitableScript},
 };
-use bitcoin_testscripts::int_mul_windowed::U254MulScript;
+use bitcoin_testscripts::{bitvm::bn254::{fp254impl::Fp254Impl, fq::Fq}, int_mul_windowed::U254MulScript, square_fibonacci::SquareFibonacciScript};
 use bitcoin_utils::stack_to_script;
 use bitcoin_utils::{comparison::OP_LONGEQUALVERIFY, treepp::*};
 use bitcoin_window_mul::{bigint::U508, traits::comparable::Comparable};
@@ -330,6 +330,79 @@ pub fn test_disprove_script_mul_script() {
 
     // Now, we form the disprove script for each shard
     for i in 0..(split_result.shards.len() - 1) {
+        let disprove_script = DisproveScript::new(
+            &split_result.intermediate_states[i],
+            &split_result.intermediate_states[i + 1],
+            &split_result.shards[i + 1],
+        );
+
+        // Check that witness + verification scripts are satisfied
+        let verify_script = script! {
+            { disprove_script.script_witness }
+            { disprove_script.script_pubkey }
+        };
+
+        let result = execute_script(verify_script);
+        assert!(!result.success, "Verification {:?} failed", i + 1);
+    }
+}
+
+#[test]
+pub fn test_disprove_script_fibonacci_script_invalid_input() {
+    // The number of steps for the Fibonacci script
+    const STEPS: usize = 64;
+
+    // First, we generate the pair of input and output scripts
+    let IOPair { input, output } = SquareFibonacciScript::<STEPS>::generate_invalid_io_pair();
+
+    // Splitting the script into shards
+    let split_result = SquareFibonacciScript::<STEPS>::default_split(input, SplitType::ByInstructions);
+
+    // Checking the last state (which must be equal to the result of the multiplication)
+    let last_state = split_result.must_last_state();
+
+    // The element of the mainstack must be equal to the actual output
+    let verification_script = script! {
+        { stack_to_script(&last_state.stack) }
+        { output }
+        { Fq::equal(0, 1) }
+    };
+
+    let result = execute_script(verification_script);
+    assert!(!result.success, "verification has failed");
+
+    // Now, we form the disprove script for each shard
+    for i in 0..(split_result.shards.len() - 1) {
+        let disprove_script = DisproveScript::new(
+            &split_result.intermediate_states[i],
+            &split_result.intermediate_states[i + 1],
+            &split_result.shards[i + 1],
+        );
+
+        // Check that witness + verification scripts are satisfied
+        let verify_script = script! {
+            { disprove_script.script_witness }
+            { disprove_script.script_pubkey }
+        };
+
+        let result = execute_script(verify_script);
+        assert!(!result.success, "Verification {:?} failed", i + 1);
+    }
+}
+
+#[test]
+pub fn test_disprove_script_fibonacci_script_valid_input() {
+    // The number of steps for the Fibonacci script
+    const STEPS: usize = 64;
+
+    // First, we generate the pair of input and output scripts
+    let IOPair { input, output: _ } = SquareFibonacciScript::<STEPS>::generate_valid_io_pair();
+
+    // Splitting the script into shards
+    let split_result = SquareFibonacciScript::<STEPS>::default_split(input, SplitType::ByInstructions);
+
+    // Now, we form the disprove script for each shard
+    for i in 0..(split_result.shards.len()-1) {
         let disprove_script = DisproveScript::new(
             &split_result.intermediate_states[i],
             &split_result.intermediate_states[i + 1],

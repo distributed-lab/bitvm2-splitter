@@ -205,42 +205,4 @@ mod tests {
         let total_size = split_result.total_states_size();
         println!("Total size of the states: {} bytes", total_size);
     }
-
-    #[test]
-    #[ignore = "wip"]
-    fn test_to_u32_conversion() {
-        // First, we generate the pair of input and output scripts
-        let IOPair { input, output } = U261MulKaratsubaScript::generate_valid_io_pair();
-
-        // Splitting the script into shards
-        let split_result = U261MulKaratsubaScript::default_split(input, SplitType::ByInstructions);
-
-        // Debugging the split result
-        println!("Split result: {:?}", split_result);
-
-        // Now, verifying tha the split is correct (meaning, the last state is equal to the output)
-        let last_state = split_result.must_last_state();
-
-        // Altstack must be empty
-        assert!(last_state.altstack.is_empty(), "altstack is not empty!");
-
-        // The element of the mainstack must be equal to the actual output
-        let verification_script = script! {
-            { stack_to_script(&last_state.stack) }
-            { output }
-            { U522::OP_EQUAL(0, 1) }
-        };
-
-        let result = execute_script(verification_script);
-        assert!(result.success, "verification has failed");
-
-        // Now, let us debug each of the intermediate states
-        for (i, state) in split_result.intermediate_states.iter().enumerate() {
-            let state_as_bytes = state.stack.clone().serialize_to_bytes();
-
-            println!("Intermediate state #{}: {:?}", i, state);
-            println!("Intermediate state as bytes #{}: {:?}", i, state_as_bytes);
-            // println!("Intermediate state as u32 array #{}: {:?}", i, Stack::from_u8_vec(state_as_bytes));
-        }
-    }
 }
