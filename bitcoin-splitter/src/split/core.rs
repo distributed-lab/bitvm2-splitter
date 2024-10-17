@@ -6,10 +6,11 @@ use bitcoin::{
     opcodes::all::{OP_ENDIF, OP_IF, OP_NOTIF},
     script::Instruction,
 };
+use bitcoin_utils::treepp::*;
 use indicatif::ProgressBar;
 
 use super::script::SplitResult;
-use crate::{split::intermediate_state::IntermediateState, treepp::*};
+use crate::split::intermediate_state::IntermediateState;
 
 /// Optimal size of the script in bytes
 ///
@@ -48,11 +49,7 @@ pub enum SplitType {
 
 /// Splits the given script into smaller parts. Tries to keep each chunk size
 /// to the optimal size `chunk_size` as close as possible.
-pub(super) fn split_into_shards(
-    script: &Script,
-    chunk_size: usize,
-    split_type: SplitType,
-) -> Vec<Script> {
+pub fn split_into_shards(script: &Script, chunk_size: usize, split_type: SplitType) -> Vec<Script> {
     let instructions: Vec<Instruction> = script
         .instructions()
         .map(|instruction| instruction.expect("script is most likely corrupted"))
@@ -110,7 +107,7 @@ pub(super) fn split_into_shards(
 
 /// Fuzzy split of the script into smaller parts by searching for the optimal size
 /// by checking various script sizes
-pub(super) fn fuzzy_split(input: Script, script: Script, split_type: SplitType) -> SplitResult {
+pub fn fuzzy_split(input: Script, script: Script, split_type: SplitType) -> SplitResult {
     // Define the limits
     const MIN_CHUNK_SIZE: usize = 100;
     const MAX_CHUNK_SIZE: usize = MAX_SCRIPT_SIZE;
@@ -150,7 +147,7 @@ pub(super) fn fuzzy_split(input: Script, script: Script, split_type: SplitType) 
 }
 
 /// Default split of the script into smaller parts with the hard-coded optimal size
-pub(super) fn default_split(input: Script, script: Script, split_type: SplitType) -> SplitResult {
+pub fn default_split(input: Script, script: Script, split_type: SplitType) -> SplitResult {
     naive_split(input, script, split_type, DEFAULT_SCRIPT_SIZE)
 }
 
@@ -159,17 +156,27 @@ pub(super) fn default_split(input: Script, script: Script, split_type: SplitType
 /// 2. We execute each shard with the input
 /// 3. Save intermediate results
 /// 4. Return all the shards and intermediate results in the form of [`SplitResult`]
-pub(super) fn naive_split(
+pub fn naive_split(
     input: Script,
     script: Script,
     split_type: SplitType,
     chunk_size: usize,
 ) -> SplitResult {
-    // First, we split the script into smaller parts
     let shards = split_into_shards(&script, chunk_size, split_type);
+    let intermediate_states: Vec<IntermediateState> =
+        form_states_from_shards(shards.clone(), input);
+
+    SplitResult {
+        shards,
+        intermediate_states,
+    }
+}
+
+/// Given an array of shards and input, creates the vector of intermediate states
+pub fn form_states_from_shards(shards: Vec<Script>, input: Script) -> Vec<IntermediateState> {
     let mut intermediate_states: Vec<IntermediateState> = vec![];
 
-    // Then, we do the following steps:
+    // We do the following steps:
     // 1. We execute the first script with the input
     // 2. We take the stack and write it to the intermediate results
     // 3. We execute the second script with the saved intermediate results
@@ -195,8 +202,5 @@ pub(super) fn naive_split(
         "Intermediate results should be the same as the number of scripts"
     );
 
-    SplitResult {
-        shards,
-        intermediate_states,
-    }
+    intermediate_states
 }

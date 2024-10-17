@@ -2,7 +2,7 @@ use bitcoin::hashes::HashEngine;
 use bitvec::{order::Lsb0, slice::BitSlice, vec::BitVec};
 use std::vec::Vec;
 
-use bitcoin_splitter::treepp::*;
+use bitcoin_utils::treepp::*;
 
 pub mod u32;
 

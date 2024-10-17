@@ -1,6 +1,6 @@
 //! Special Winternitz implementation for u32 message.
 
-use bitcoin_splitter::treepp::*;
+use bitcoin_utils::treepp::*;
 
 use bitcoin::hashes::hash160::Hash as Hash160;
 use bitcoin::hashes::Hash;

@@ -1,4 +1,5 @@
-use crate::{treepp::*, utils::OP_LONGNOTEQUAL};
+use bitcoin_utils::{comparison::OP_LONGNOTEQUAL, treepp::*};
+
 use signing::SignedIntermediateState;
 
 use bitcoin_splitter::split::{
@@ -143,4 +144,3 @@ pub fn form_disprove_scripts<const I: usize, const O: usize, S: SplitableScript<
         })
         .collect()
 }
-

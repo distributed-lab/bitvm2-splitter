@@ -4,8 +4,9 @@ members = [
 	"integration-tests",
 	"bitcoin-winternitz",
 	"bitcoin-scriptexec",
-  "core"
-]
+	"bitcoin-testscripts",
+	"core"
+, "bitcoin-utils"]
 resolver = "2"
 
 [workspace.dependencies]

@@ -6,7 +6,7 @@ use super::{
     core::{default_split, fuzzy_split, naive_split, SplitType, STACK_SIZE_INDEX},
     intermediate_state::IntermediateState,
 };
-use crate::treepp::*;
+use bitcoin_utils::treepp::*;
 
 /// Structure that represents a pair of input and output scripts. Typically, the prover
 /// wants to prove `script(input) == output`
