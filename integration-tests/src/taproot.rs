@@ -10,7 +10,7 @@ use bitcoin::{
 };
 use bitcoin_splitter::split::script::{IOPair, SplitableScript};
 use bitcoin_testscripts::{
-    int_mul_windowed::U254MulScript, square_fibonacci::SquareFibonacciScript, u29mul::U29MulScript,
+    int_mul_windowed::U254MulScript, square_fibonacci::SquareFibonacciScript, u32mul::U32MulScript,
 };
 use bitcoincore_rpc::{
     bitcoin::consensus::{Decodable as _, Encodable as _},
@@ -285,10 +285,10 @@ fn test_square_fibonachi_disprove() -> eyre::Result<()> {
 }
 
 #[test]
-fn test_u29mul_disprove() -> eyre::Result<()> {
+fn test_u32mul_disprove() -> eyre::Result<()> {
     test_script_disprove_distorted::<
-        { U29MulScript::INPUT_SIZE },
-        { U29MulScript::OUTPUT_SIZE },
-        U29MulScript,
+        { U32MulScript::INPUT_SIZE },
+        { U32MulScript::OUTPUT_SIZE },
+        U32MulScript,
     >()
 }
