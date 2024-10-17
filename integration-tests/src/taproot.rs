@@ -10,7 +10,7 @@ use bitcoin::{
 };
 use bitcoin_splitter::split::script::{IOPair, SplitableScript};
 use bitcoin_testscripts::{
-    int_mul_windowed::U254MulScript, square_fibonacci::SquareFibonacciScript,
+    int_mul_windowed::U254MulScript, square_fibonacci::SquareFibonacciScript, u29mul::U29MulScript,
 };
 use bitcoincore_rpc::{
     bitcoin::consensus::{Decodable as _, Encodable as _},
@@ -232,18 +232,20 @@ where
     )?;
 
     tracing::info!("Number of disprove txs: {}", disprove_txs.len());
-    for (idx, (_, disprove_tx)) in disprove_txs.into_iter().enumerate() {
+    for (idx, (_disprove_script, disprove_tx)) in disprove_txs.into_iter().enumerate() {
         let err = client.send_raw_transaction(txconv!(disprove_tx)).err();
+
+        let hexed = hex!(disprove_tx);
+        println!("Txid: {}", disprove_tx.compute_txid());
+        println!("DisproveSize: {}", hexed.len() / 2); // as it's hex
+        // println!("DisproveScript: {}", disprove_script);
+        println!("DisproveTx: {}", hexed);
+        // fs::write("./disprove.hex", hexed)?;
 
         if let Some(err) = err {
             tracing::error!(reason = %err, "Disprove Tx {idx} rejected...");
             continue;
         }
-        
-        let hexed = hex!(disprove_tx);
-        println!("Txid: {}", disprove_tx.compute_txid());
-        println!("DisproveSize: {}", hexed.len() / 2); // as it's hex
-        fs::write("./disprove.hex", hexed)?;
         break;
     }
 
@@ -277,5 +279,14 @@ fn test_square_fibonachi_disprove() -> eyre::Result<()> {
         { SquareFibonacciScript::<5>::INPUT_SIZE },
         { SquareFibonacciScript::<5>::OUTPUT_SIZE },
         SquareFibonacciScript<5>,
+    >()
+}
+
+#[test]
+fn test_u29mul_disprove() -> eyre::Result<()> {
+    test_script_disprove_distorted::<
+        { U29MulScript::INPUT_SIZE },
+        { U29MulScript::OUTPUT_SIZE },
+        U29MulScript,
     >()
 }
