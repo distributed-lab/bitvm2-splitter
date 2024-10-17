@@ -531,8 +531,6 @@
 \newtheorem{note}{Note}
 \newtheorem{case}{Case}
 
-\theoremstyle{plain}
-
 %Emulate LLNCS spnewtheorem
 \if@spthm
 \def\spnewtheorem{\@ifstar{\IACR@spstar}{\IACR@sp}}
