@@ -488,12 +488,14 @@ impl Exec {
                 // Some things we do even when we're not executing.
 
                 // Note how OP_RESERVED does not count towards the opcode limit.
-                if (self.ctx == ExecCtx::Legacy || self.ctx == ExecCtx::SegwitV0) && op.to_u8() > OP_PUSHNUM_16.to_u8() {
-                        self.opcode_count += 1;
-                        if self.opcode_count > MAX_OPS_PER_SCRIPT {
-                            return self.fail(ExecError::OpCount);
-                        }
+                if (self.ctx == ExecCtx::Legacy || self.ctx == ExecCtx::SegwitV0)
+                    && op.to_u8() > OP_PUSHNUM_16.to_u8()
+                {
+                    self.opcode_count += 1;
+                    if self.opcode_count > MAX_OPS_PER_SCRIPT {
+                        return self.fail(ExecError::OpCount);
                     }
+                }
 
                 match op {
                     OP_CAT if !self.opt.experimental.op_cat || self.ctx != ExecCtx::Tapscript => {
@@ -607,7 +609,10 @@ impl Exec {
                         }
                     }
                     // Under segwit v0 only enabled as policy.
-                    if self.opt.verify_minimal_if && self.ctx == ExecCtx::SegwitV0 && (top.len() > 1 || (top.len() == 1 && top[0] != 1)) {
+                    if self.opt.verify_minimal_if
+                        && self.ctx == ExecCtx::SegwitV0
+                        && (top.len() > 1 || (top.len() == 1 && top[0] != 1))
+                    {
                         return Err(ExecError::TapscriptMinimalIf);
                     }
                     let b = if op == OP_NOTIF {

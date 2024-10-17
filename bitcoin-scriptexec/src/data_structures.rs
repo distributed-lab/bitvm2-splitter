@@ -19,6 +19,8 @@ impl StackEntry {
                     num <= u32::MAX.into(),
                     "There should not be entries with more than 32 bits on the stack at this point"
                 );
+                // Since num is for sure <= u32::MAX, we can safely convert it to u32
+                let num = num as u32;
                 num.to_le_bytes().to_vec()
             }
             StackEntry::StrRef(v) => {

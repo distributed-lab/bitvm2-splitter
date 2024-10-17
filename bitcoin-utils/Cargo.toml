@@ -1,0 +1,13 @@
+[package]
+name    = "bitcoin-utils"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+# Bitcoin Libraries
+bitcoin            = { workspace = true, features = ["rand-std"]}
+bitcoin-script     = { git = "https://github.com/BitVM/rust-bitcoin-script" }
+bitcoin-scriptexec = { path = "../bitcoin-scriptexec" }
+
+# Crypto libraries
+hex = "0.4.3"

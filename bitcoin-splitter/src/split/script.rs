@@ -3,10 +3,10 @@
 use core::fmt;
 
 use super::{
-    core::{naive_split, SplitType},
+    core::{default_split, fuzzy_split, naive_split, SplitType, STACK_SIZE_INDEX},
     intermediate_state::IntermediateState,
 };
-use crate::treepp::*;
+use bitcoin_utils::treepp::*;
 
 /// Structure that represents a pair of input and output scripts. Typically, the prover
 /// wants to prove `script(input) == output`
@@ -54,6 +54,16 @@ impl SplitResult {
         }
     }
 
+    /// Returns the number of intermediate states (and thus the number of shards)
+    pub fn len(&self) -> usize {
+        self.intermediate_states.len()
+    }
+
+    /// Returns whether the split result is empty
+    pub fn is_empty(&self) -> bool {
+        self.intermediate_states.is_empty()
+    }
+
     /// Returns the last intermediate state, ignoring the possibility of the empty vector
     pub fn must_last_state(&self) -> &IntermediateState {
         self.intermediate_states
@@ -65,8 +75,52 @@ impl SplitResult {
     pub fn total_states_size(&self) -> usize {
         self.intermediate_states
             .iter()
-            .map(|state| state.stack.len() + state.altstack.len())
+            .map(|state| state.size())
             .sum()
+    }
+
+    /// Returns the maximal size of the states (stack + altstack)
+    pub fn max_states_size(&self) -> usize {
+        self.intermediate_states
+            .iter()
+            .map(|state| state.size())
+            .max()
+            .unwrap_or(0)
+    }
+
+    /// Returns the maximal size of two adjacent states (stack + altstack)
+    pub fn max_adjacent_states_size(&self) -> usize {
+        self.intermediate_states
+            .windows(2)
+            .map(|states| states[0].size() + states[1].size())
+            .max()
+            .unwrap_or(0)
+    }
+
+    /// Returns the complexity index of the script splitting.
+    /// The complexity index is the approximate worst number of opcodes
+    /// it takes to form the disprove script.
+    pub fn complexity_index(&self) -> usize {
+        let mut resultant_complexity = 0;
+
+        for i in 0..self.len() {
+            // Calculating sizes of the shards and states.
+            // Namely, since z[i] = f[i](z[i-1]), we need to calculate
+            // the size (|z[i]| + |z[i-1]|) * STACK_SIZE_INDEX + |f[i]|
+            resultant_complexity = resultant_complexity.max({
+                let shard_size = self.shards[i].len();
+                let current_state_size = self.intermediate_states[i].size();
+                let previous_state_size = if i > 0 {
+                    self.intermediate_states[i - 1].size()
+                } else {
+                    0
+                };
+
+                shard_size + (current_state_size + previous_state_size) * STACK_SIZE_INDEX
+            });
+        }
+
+        resultant_complexity
     }
 }
 
@@ -80,6 +134,12 @@ pub trait SplitableScript<const INPUT_SIZE: usize, const OUTPUT_SIZE: usize> {
 
     /// Generates a random valid input for the script
     fn generate_valid_io_pair() -> IOPair<INPUT_SIZE, OUTPUT_SIZE>;
+
+    /// Genreates invalid input for the script
+    ///
+    /// NOTE: This function is used for testing purposes, specifically
+    /// for testing the **Disprove** script.
+    fn generate_invalid_io_pair() -> IOPair<INPUT_SIZE, OUTPUT_SIZE>;
 
     /// Verifies that the input is valid for the script
     fn verify(input: Script, output: Script) -> bool {
@@ -111,7 +171,17 @@ pub trait SplitableScript<const INPUT_SIZE: usize, const OUTPUT_SIZE: usize> {
     }
 
     /// Splits the script into smaller parts
-    fn split(input: Script, split_type: SplitType) -> SplitResult {
-        naive_split(input, Self::script(), split_type)
+    fn default_split(input: Script, split_type: SplitType) -> SplitResult {
+        default_split(input, Self::script(), split_type)
+    }
+
+    /// Splits the script into smaller parts with the specified chunk size
+    fn split(input: Script, split_type: SplitType, chunk_size: usize) -> SplitResult {
+        naive_split(input, Self::script(), split_type, chunk_size)
+    }
+
+    /// Splits the script into smaller parts with the fuzzy split
+    fn fuzzy_split(input: Script, split_type: SplitType) -> SplitResult {
+        fuzzy_split(input, Self::script(), split_type)
     }
 }

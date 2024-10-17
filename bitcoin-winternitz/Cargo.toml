@@ -1,0 +1,20 @@
+[package]
+name = "bitcoin-winternitz"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+bitcoin.workspace = true
+bitvec = { version = "1.0.1", default-features = false, features = ["alloc"] }
+rand = { version = "0.8.5", default-features = false, optional = true, features = ["min_const_gen"] }
+bitcoin-splitter.path = "../bitcoin-splitter"
+bitcoin-utils.path = "../bitcoin-utils"
+
+[features]
+default = ["rand"]
+rand = ["dep:rand"]
+
+[dev-dependencies]
+quickcheck = "1.0.3"
+quickcheck_macros = "1.0.0"
+rand = { version = "0.8.5", default-features = false, features = ["min_const_gen", "small_rng"] }
