@@ -1,4 +1,6 @@
-# :axe: BitVM2 Made Practical
+<center>
+<h1> Nero: BitVM2 Made Practical </h1>
+</center>
 
 Practical implementation of the BitVM2 protocol
 

@@ -1,4 +1,4 @@
-use bitcoin_utils::{comparison::OP_LONGNOTEQUAL, treepp::*};
+use bitcoin_utils::{comparison::OP_LONGNOTEQUAL, stack_to_script, treepp::*};
 
 use signing::SignedIntermediateState;
 
@@ -116,7 +116,11 @@ impl DisproveScript {
 /// - Splits the script into shards
 /// - For each shard, creates a DisproveScript
 /// - Returns the list of DisproveScripts
-pub fn form_disprove_scripts<const I: usize, const O: usize, S: SplitableScript<I, O>>(
+pub fn form_disprove_scripts<
+    const INPUT_SIZE: usize,
+    const OUTPUT_SIZE: usize,
+    S: SplitableScript<INPUT_SIZE, OUTPUT_SIZE>,
+>(
     input: Script,
 ) -> Vec<DisproveScript> {
     // Splitting the script into shards
@@ -143,4 +147,61 @@ pub fn form_disprove_scripts<const I: usize, const O: usize, S: SplitableScript<
             )
         })
         .collect()
+}
+
+/// Given the script and its input, does the following:
+/// - Splits the script into shards
+/// - Distorts the random intermediate state, making
+///   two state transitions incorrect
+/// - For each shard, creates a DisproveScript
+/// - Returns the list of DisproveScripts and the index of distorted shard
+pub fn form_disprove_scripts_distorted<
+    const INPUT_SIZE: usize,
+    const OUTPUT_SIZE: usize,
+    S: SplitableScript<INPUT_SIZE, OUTPUT_SIZE>,
+>(
+    input: Script,
+) -> (Vec<DisproveScript>, usize) {
+    // Splitting the script into shards
+    let mut split_result = S::default_split(input.clone(), SplitType::default());
+
+    assert_eq!(
+        split_result.shards.len(),
+        split_result.intermediate_states.len(),
+        "Shards and intermediate states must have the same length"
+    );
+
+    // Distorting the output of the random shard
+    let distorted_shard_id = rand::random::<usize>() % split_result.shards.len();
+    let current_stack = split_result.intermediate_states[distorted_shard_id]
+        .stack
+        .clone();
+    assert!(!current_stack.is_empty(), "Stack must not be empty");
+    split_result.intermediate_states[distorted_shard_id].stack = {
+        // Executing a random script and getting the stack
+        let random_state = script! {
+            { stack_to_script(&current_stack) }
+            OP_DROP OP_0 // Changing the last limb to OP_0
+        };
+
+        execute_script(random_state).main_stack
+    };
+
+    let disprove_scripts = (0..split_result.shards.len())
+        .map(|i| {
+            let from_state = if i == 0 {
+                IntermediateState::from_inject_script(&input.clone())
+            } else {
+                split_result.intermediate_states[i - 1].clone()
+            };
+
+            DisproveScript::new(
+                &from_state,
+                &split_result.intermediate_states[i],
+                &split_result.shards[i],
+            )
+        })
+        .collect();
+
+    (disprove_scripts, distorted_shard_id)
 }

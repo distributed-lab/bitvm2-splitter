@@ -1,4 +1,4 @@
-use crate::disprove::DisproveScript;
+use crate::disprove::{form_disprove_scripts_distorted, DisproveScript};
 
 use bitcoin_splitter::split::{
     core::SplitType,
@@ -423,6 +423,42 @@ pub fn test_disprove_script_fibonacci_script_valid_input() {
 
         let result = execute_script(verify_script);
         assert!(!result.success, "Verification {:?} failed", i + 1);
+    }
+}
+
+#[test]
+pub fn test_distorted_disprove_script_fibonacci_sequence() {
+    // The number of steps for the Fibonacci script
+    const STEPS: usize = 64;
+    type FibonacciScript = SquareFibonacciScript<STEPS>;
+
+    // First, we generate the pair of input and output scripts
+    let IOPair { input, output: _ } = FibonacciScript::generate_valid_io_pair();
+
+    // Splitting the script into shards
+    let (disprove_scripts, distorted_id) = form_disprove_scripts_distorted::<
+        { FibonacciScript::INPUT_SIZE },
+        { FibonacciScript::OUTPUT_SIZE },
+        FibonacciScript,
+    >(input.clone());
+
+    println!("Distorted ID: {:?}", distorted_id);
+
+    // Now, we form the disprove script for each shard
+    for (i, disprove_script) in disprove_scripts.into_iter().enumerate() {
+        // Check that witness + verification scripts are satisfied only for the distorted shard
+        let verify_script = script! {
+            { disprove_script.clone().script_witness }
+            { disprove_script.clone().script_pubkey }
+        };
+
+        let result = execute_script(verify_script);
+
+        if i == distorted_id || i == distorted_id + 1 {
+            assert!(result.success, "Verification {:?} failed", i + 1);
+        } else {
+            assert!(!result.success, "Verification {:?} failed", i + 1);
+        }
     }
 }
 
