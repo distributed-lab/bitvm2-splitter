@@ -5,6 +5,29 @@ use crate::treepp::*;
 /// - **Input:** `{ a[0], a[1], ..., a[l-1], b[0], b[1], ..., b[l-1] }`
 /// - **Returns:** `{ a[0] == b[0] && a[1] == b[1] && ... && a[l-1] == b[l-1] }`
 #[allow(non_snake_case)]
+pub fn OP_LONGEQUAL(length: usize) -> Script {
+    if length == 0 {
+        return script! { OP_TRUE };
+    }
+
+    script! {
+        for j in (0..length).rev() {
+            { j+1 } OP_ROLL OP_EQUAL OP_TOALTSTACK
+        }
+
+        OP_FROMALTSTACK
+        for _ in 0..length - 1 {
+            OP_FROMALTSTACK
+            OP_BOOLAND
+        }
+    }
+}
+
+/// Asserts that two elements, consisting of multiple limbs, are equal.
+///
+/// - **Input:** `{ a[0], a[1], ..., a[l-1], b[0], b[1], ..., b[l-1] }`
+/// - **Returns:** `{ a[0] == b[0] && a[1] == b[1] && ... && a[l-1] == b[l-1] }`
+#[allow(non_snake_case)]
 pub fn OP_LONGEQUALVERIFY(length: usize) -> Script {
     if length == 0 {
         return script! { OP_RETURN };
@@ -57,6 +80,31 @@ pub fn OP_LONGNOTEQUALVERIFY(length: usize) -> Script {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    #[allow(non_snake_case)]
+    fn test_OP_LONGEQUAL_true() {
+        let script = script! {
+            1 2 3 4 5 1 2 3 4 5
+            { OP_LONGEQUAL(5) }
+        };
+
+        let exec_result = execute_script(script);
+        assert!(exec_result.success, "OP_LONGEQUAL(5) failed");
+    }
+
+    #[test]
+    #[allow(non_snake_case)]
+    fn test_OP_LONGEQUAL_false() {
+        let script = script! {
+            1 2 3 4 5 1 2 3 4 6
+            { OP_LONGEQUAL(5) }
+            OP_FALSE OP_EQUAL
+        };
+
+        let exec_result = execute_script(script);
+        assert!(exec_result.success, "OP_LONGEQUAL(5) failed");
+    }
 
     #[test]
     #[allow(non_snake_case)]
