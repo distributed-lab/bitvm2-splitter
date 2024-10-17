@@ -2,7 +2,10 @@
 //! for performing the multiplication of two large integers
 //! (exceeding standard Bitcoin 31-bit integers)
 
-use bitcoin_splitter::split::{core::SplitType, script::{IOPair, SplitResult, SplitableScript}};
+use bitcoin_splitter::split::{
+    core::SplitType,
+    script::{IOPair, SplitResult, SplitableScript},
+};
 use bitcoin_utils::treepp::*;
 use bitcoin_window_mul::{
     bigint::implementation::NonNativeBigIntImpl,
@@ -67,10 +70,7 @@ impl SplitableScript<{ INPUT_SIZE }, { OUTPUT_SIZE }> for U29MulScript {
         }
     }
 
-    fn default_split(
-        input: Script,
-        split_type: SplitType,
-    ) -> SplitResult {
+    fn default_split(input: Script, split_type: SplitType) -> SplitResult {
         Self::split(input, split_type, 300)
     }
 }

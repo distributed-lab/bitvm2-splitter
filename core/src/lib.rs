@@ -3,12 +3,11 @@ use once_cell::sync::Lazy;
 pub mod assert;
 pub mod disprove;
 
-
 #[allow(dead_code)]
 // Re-export what is needed to write treepp scripts
 pub mod treepp {
-    pub use bitcoin_utils::debug::{execute_script, run};
     pub use bitcoin_script::{define_pushable, script};
+    pub use bitcoin_utils::debug::{execute_script, run};
 
     define_pushable!();
     pub use bitcoin::ScriptBuf as Script;

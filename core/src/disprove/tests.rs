@@ -2,7 +2,10 @@ use std::{fs, path::Path, str::FromStr as _};
 
 use crate::disprove::{form_disprove_scripts_distorted, DisproveScript};
 
-use bitcoin::{consensus::Encodable as _, hashes::Hash as _, key::Secp256k1, secp256k1::SecretKey, Amount, OutPoint, TxOut, WPubkeyHash};
+use bitcoin::{
+    consensus::Encodable as _, hashes::Hash as _, key::Secp256k1, secp256k1::SecretKey, Amount,
+    OutPoint, TxOut, WPubkeyHash,
+};
 use bitcoin_splitter::split::{
     core::SplitType,
     intermediate_state::IntermediateState,

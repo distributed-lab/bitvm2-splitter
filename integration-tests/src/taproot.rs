@@ -231,21 +231,23 @@ where
         atx.compute_txid(),
     )?;
 
-    tracing::info!("Number of disprove txs: {}", disprove_txs.len());
+    let number = disprove_txs.len();
+    tracing::info!("Number of disprove txs: {}", number);
     for (idx, (_disprove_script, disprove_tx)) in disprove_txs.into_iter().enumerate() {
         let err = client.send_raw_transaction(txconv!(disprove_tx)).err();
 
-        let hexed = hex!(disprove_tx);
-        println!("Txid: {}", disprove_tx.compute_txid());
-        println!("DisproveSize: {}", hexed.len() / 2); // as it's hex
-        // println!("DisproveScript: {}", disprove_script);
-        println!("DisproveTx: {}", hexed);
-        // fs::write("./disprove.hex", hexed)?;
-
         if let Some(err) = err {
-            tracing::error!(reason = %err, "Disprove Tx {idx} rejected...");
+            tracing::warn!(reason = %err, "Disprove Tx {idx} rejected...");
+            if idx + 1 == number {
+                panic!("no dispove transaction worked!");
+            }
             continue;
         }
+
+        let hexed = hex!(disprove_tx);
+        println!("Txid: {}", disprove_tx.compute_txid());
+        println!("DisproveSize: {}", hexed.len() / 2);
+        fs::write("./disprove.hex", hexed)?;
         break;
     }
 
@@ -276,9 +278,9 @@ fn test_u254_mul_payout() -> eyre::Result<()> {
 #[test]
 fn test_square_fibonachi_disprove() -> eyre::Result<()> {
     test_script_disprove_distorted::<
-        { SquareFibonacciScript::<5>::INPUT_SIZE },
-        { SquareFibonacciScript::<5>::OUTPUT_SIZE },
-        SquareFibonacciScript<5>,
+        { SquareFibonacciScript::<1024>::INPUT_SIZE },
+        { SquareFibonacciScript::<1024>::OUTPUT_SIZE },
+        SquareFibonacciScript<1024>,
     >()
 }
 

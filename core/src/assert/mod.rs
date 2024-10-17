@@ -15,7 +15,10 @@ use bitcoin::{
 };
 use bitcoin_splitter::split::script::SplitableScript;
 
-use crate::{assert::payout_script::PayoutScript, disprove::form_disprove_scripts_distorted, treepp::*, UNSPENDABLE_KEY};
+use crate::{
+    assert::payout_script::PayoutScript, disprove::form_disprove_scripts_distorted, treepp::*,
+    UNSPENDABLE_KEY,
+};
 
 use crate::disprove::{form_disprove_scripts, DisproveScript};
 
@@ -100,14 +103,17 @@ impl<const I: usize, const O: usize, S: SplitableScript<I, O>> AssertTransaction
     ) -> (Self, usize) {
         let (disprove_scripts, idx) = form_disprove_scripts_distorted::<I, O, S>(input.clone());
         let payout_script = PayoutScript::with_locktime(operator_pubkey, options.payout_locktime);
-        (Self {
-            input,
-            operator_pubkey,
-            amount,
-            disprove_scripts,
-            payout_script,
-            __program: PhantomData,
-        }, idx)
+        (
+            Self {
+                input,
+                operator_pubkey,
+                amount,
+                disprove_scripts,
+                payout_script,
+                __program: PhantomData,
+            },
+            idx,
+        )
     }
 
     /// Return partially signed transaction with P2TR output with all disprove

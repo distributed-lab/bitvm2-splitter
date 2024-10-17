@@ -122,8 +122,9 @@ impl DisproveScript {
                 }
                 Instruction::Op(opcode) => {
                     match opcode.classify(ClassifyContext::TapScript) {
-                        bitcoin::opcodes::Class::PushNum(_) => {
-                            elements.push([opcode.to_u8()].to_vec());
+                        bitcoin::opcodes::Class::PushNum(num) => {
+                            let buf = num.to_le_bytes().into_iter().filter(|b| *b != 0).collect();
+                            elements.push(buf);
                         }
                         _ => {
                             unreachable!("script witness shouldn't have opcodes, got {opcode}")
